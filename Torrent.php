@@ -657,7 +657,6 @@ class Torrent {
         $packed_hash = pack('H*', $hash_info ? $hash_info : sha1( self::encode( $this->info ) ) );
         $scrape_data = file_get_contents( str_ireplace( '/announce', '/scrape', $announce ? $announce : $this->announce ) . '?info_hash=' . urlencode( $packed_hash ) );
         $stats = self::decode_data( $scrape_data );
-        var_dump($stats);
         return isset( $stats['files'][$packed_hash] ) ?
             $stats['files'][$packed_hash] :
             ! self::$errors[] = new Exception( 'Invalid scrape data' );
