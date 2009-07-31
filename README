@@ -35,9 +35,22 @@ send a note to adrien.gibrat@gmail.com so I can mail you a copy.
 
     // create torrent
     $torrent = new Torrent( array( 'test.mp3', 'test.jpg' ), 'http://torrent.tracker/annonce' );
-    $torrent->send();
+    $torrent->save('test.torrent'); // save to disk
+
+    // modify torrent
+    $torrent->announce('http://alternate-torrent.tracker/annonce'); // add a tracker
+    $torrent->announce(false); // reset announce trackers
+    $torrent->announce(array('http://torrent.tracker/annonce', 'http://alternate-torrent.tracker/annonce')); // set tracker(s)
+    $torrent->comment('hello world');
+    $torrent->name('test torrent');
+    $torrent->is_private(true);
+    $torrent->httpseeds('http://file-hosting.domain/path/'); // Bittornado implementation
+    $torrent->url_list(array('http://file-hosting.domain/path/','http://another-file-hosting.domain/path/')); // GetRight implementation
 
     // print errors
     if ( $errors = $torrent->errors() )
         var_dump( $errors );
+
+    // send to user
+    $torrent->send();
 </code>
