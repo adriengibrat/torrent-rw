@@ -6,7 +6,7 @@
  *
  * LICENSE: This source file is subject to version 3 of the GNU GPL
  * that is available through the world-wide-web at the following URI:
- * http://www.gnu.org/licenses/gpl.html.  If you did not receive a copy of
+ * http://www.gnu.org/licenses/gpl.html. If you did not receive a copy of
  * the GNU GPL License and are unable to obtain it through the web, please
  * send a note to adrien.gibrat@gmail.com so I can mail you a copy.
  *
@@ -59,10 +59,10 @@
 	$torrent->send();
  * </code>
  *
- * @author	 Adrien Gibrat <adrien.gibrat@gmail.com>
- * @copyleft	 2008 - Just use it!
- * @license	http://www.gnu.org/licenses/gpl.html GNU General Public License version 3
- * @version	Release: 0.5
+ * @author		Adrien Gibrat <adrien.gibrat@gmail.com>
+ * @copyleft	2008 - Just use it!
+ * @license		http://www.gnu.org/licenses/gpl.html GNU General Public License version 3
+ * @version		Release: 0.5
  */
 class Torrent {
 
@@ -75,7 +75,7 @@ class Torrent {
 	 * Supported signatures:
 	 *  - Torrent( string $torrent );
 	 *  - Torrent( string $torrent, string $announce );
-	 *  - Torrent( string $torrent, array  $meta );
+	 *  - Torrent( string $torrent, array $meta );
 	 *  - Torrent( string $file_or_folder );
 	 *  - Torrent( string $file_or_folder, string $announce_url, [int $piece_length] );
 	 *  - Torrent( string $file_or_folder, array $meta, [int $piece_length] );
@@ -90,7 +90,7 @@ class Torrent {
 		if ( $piece_length < 32 || $piece_length > 4096 )
 			throw new Exception( 'Invalid piece lenth, must be between 32 and 4096' );
 		if ( is_string( $meta ) )
-			$meta =  array( 'announce' => $meta );
+			$meta = array( 'announce' => $meta );
 		if ( $this->build( $data, $piece_length * 1024 ) )
 			$this->touch();
 		else
@@ -190,7 +190,7 @@ class Torrent {
 	public function httpseeds ( $urls = null ) {
 		return is_null( $urls ) ?
 			isset( $this->httpseeds ) ? $this->httpseeds : null :
-			$this->touch( $this->httpseeds = (array)  $urls );
+			$this->touch( $this->httpseeds = (array) $urls );
 	}
 
 	/**** Analyze BitTorrent ****/
@@ -242,15 +242,15 @@ class Torrent {
 				$files[self::path( $file['path'], $this->info['name'] )] = array(
 					'startpiece'	=> floor( $size / $this->info['piece length'] ),
 					'offset'		=> fmod( $size, $this->info['piece length'] ),
-					'size'		  => $size += $file['length'],
-					'endpiece'	  => floor( $size / $this->info['piece length'] )
+					'size'			=> $size += $file['length'],
+					'endpiece'		=> floor( $size / $this->info['piece length'] )
 				);
 		elseif ( isset( $this->info['name'] ) )
 				$files[$this->info['name']] = array(
 					'startpiece'	=> 0,
 					'offset'		=> 0,
-					'size'		  => $this->info['length'],
-					'endpiece'	  => floor( $this->info['length'] / $this->info['piece length'] )
+					'size'			=> $this->info['length'],
+					'endpiece'		=> floor( $this->info['length'] / $this->info['piece length'] )
 				);
 		return $files;
 	}
@@ -457,7 +457,7 @@ class Torrent {
 	 * @return integer decoded integer
 	 */
 	static private function decode_integer ( & $data ) {
-		$start  = 0;
+		$start = 0;
 		$end	= strpos( $data, 'e');
 		if ( $end === 0 )
 			self::$errors[] = new Exception( 'Empty integer' );
@@ -497,7 +497,7 @@ class Torrent {
 	 * @return any param
 	 */
 	protected function touch ( $void = null ) {
-		$this->{'created by'}	   = 'Torrent PHP Class - Adrien Gibrat';
+		$this->{'created by'}		= 'Torrent PHP Class - Adrien Gibrat';
 		$this->{'creation date'}	= time();
 		return $void;
 	}
@@ -564,8 +564,8 @@ class Torrent {
 		fclose( $handle );
 		return array(
 			'length'		=> $size,
-			'name'		  => basename( $file ),
-			'piece length'  => $piece_length,
+			'name'			=> basename( $file ),
+			'piece length'	=> $piece_length,
 			'pieces'		=> $pieces
 		);
 	}
@@ -576,12 +576,12 @@ class Torrent {
 	 * @return array torrent info
 	 */
 	private function files ( $files, $piece_length ) {
-		$files  = array_map( 'realpath', $files );
+		$files = array_map( 'realpath', $files );
 		sort( $files );
 		usort( $files, create_function( '$a,$b', 'return strrpos($a,DIRECTORY_SEPARATOR)-strrpos($b,DIRECTORY_SEPARATOR);' ) );
-		$path   = explode( DIRECTORY_SEPARATOR, dirname( realpath( current( $files ) ) ) );
-		$length = $piece_length;
-		$piece  = $pieces = '';
+		$path	= explode( DIRECTORY_SEPARATOR, dirname( realpath( current( $files ) ) ) );
+		$length	= $piece_length;
+		$piece	= $pieces = '';
 		foreach ( $files as $i => $file ) {
 			if ( $path != array_intersect_assoc( $file_path = explode( DIRECTORY_SEPARATOR, $file ), $path ) )
 				continue self::$errors[] = new Exception( 'Files must be in the same folder: "' . $file . '" discarded' );
@@ -595,7 +595,7 @@ class Torrent {
 			fclose( $handle );
 			$info_files[$i] = array(
 				'length'	=> $filesize,
-				'path'	  => array_diff( $file_path, $path )
+				'path'		=> array_diff( $file_path, $path )
 			);
 		}
 		switch ( count( $info_files ) ) {
@@ -605,9 +605,9 @@ class Torrent {
 				return $this->file( $files[key( $info_files )], $piece_length );
 			default:
 				return array(
-					'files'		 => $info_files,
-					'name'		  => end( $path ),
-					'piece length'  => $piece_length,
+					'files'		 	=> $info_files,
+					'name'			=> end( $path ),
+					'piece length'	=> $piece_length,
 					'pieces'		=> $pieces . ( $piece ? self::pack( $piece ) : '' )
 				);
 		}
@@ -662,7 +662,7 @@ class Torrent {
 	 * @return ressource|boolean file handle or false if error
 	 */
 	static public function fopen ( $file, $size = null ) {
-		if ( ( is_null( $size ) ? self::filesize( $file ) : $size )  <= 2 * pow( 1024, 3 ) )
+		if ( ( is_null( $size ) ? self::filesize( $file ) : $size ) <= 2 * pow( 1024, 3 ) )
 			return fopen( $file, 'r' );
 		elseif ( PHP_OS != 'Linux' )
 			return ! self::$errors[] = new Exception( 'File size is greater than 2GB. This is only supported under Linux' );
@@ -678,7 +678,7 @@ class Torrent {
 	 */
 	static public function scandir ( $dir ) {
 		$paths = array();
-		foreach ( scandir( $dir ) as $item  )
+		foreach ( scandir( $dir ) as $item )
 				if ( $item != '.' && $item != '..' )
 					if ( is_dir( $path = realpath( $dir . DIRECTORY_SEPARATOR . $item ) ) )
 						$paths = array_merge( self::scandir( $path ), $paths );
