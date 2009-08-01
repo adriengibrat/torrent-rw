@@ -40,7 +40,8 @@ send a note to adrien.gibrat@gmail.com so I can mail you a copy.
     // modify torrent
     $torrent->announce('http://alternate-torrent.tracker/annonce'); // add a tracker
     $torrent->announce(false); // reset announce trackers
-    $torrent->announce(array('http://torrent.tracker/annonce', 'http://alternate-torrent.tracker/annonce')); // set tracker(s)
+    $torrent->announce(array('http://torrent.tracker/annonce', 'http://alternate-torrent.tracker/annonce')); // set tracker(s), it also works with a 'one tracker' array...
+    $torrent->announce(array(array('http://torrent.tracker/annonce', 'http://alternate-torrent.tracker/annonce'), 'http://another-torrent.tracker/annonce')); // set tiered trackers (grouped in array)
     $torrent->comment('hello world');
     $torrent->name('test torrent');
     $torrent->is_private(true);
