@@ -37,11 +37,26 @@
 
     // create torrent
     $torrent = new Torrent( array( 'test.mp3', 'test.jpg' ), 'http://torrent.tracker/annonce' );
-    $torrent->send();
+    $torrent->save('test.torrent'); // save to disk
+
+    // modify torrent
+    $torrent->announce('http://alternate-torrent.tracker/annonce'); // add a tracker
+    $torrent->announce(false); // reset announce trackers
+    $torrent->announce(array('http://torrent.tracker/annonce', 'http://alternate-torrent.tracker/annonce')); // set tracker(s), it also works with a 'one tracker' array...
+	$torrent->announce(array(array('http://torrent.tracker/annonce', 'http://alternate-torrent.tracker/annonce'), 'http://another-torrent.tracker/annonce')); // set tiered trackers
+    $torrent->comment('hello world');
+    $torrent->name('test torrent');
+    $torrent->is_private(true);
+    $torrent->httpseeds('http://file-hosting.domain/path/'); // Bittornado implementation
+    $torrent->url_list(array('http://file-hosting.domain/path/','http://another-file-hosting.domain/path/')); // 
+    GetRight implementation
 
     // print errors
     if ( $errors = $torrent->errors() )
         var_dump( $errors );
+
+    // send to user
+    $torrent->send();
  * </code>
  *
  * @author     Adrien Gibrat <adrien.gibrat@gmail.com>
@@ -104,7 +119,7 @@ class Torrent {
 
     /** Getter and setter of torrent announce url / list
 	 * If the argument is a string, announce url is added to announce list (or set as announce if announce is not set)
-	 * If the argument is an array/object, set announce url (with first url) and list (if array has more than one url)
+	 * If the argument is an array/object, set announce url (with first url) and list (if array has more than one url), tiered list supported
 	 * If the argument is false announce url & list are unset
      * @param null|false|string|array announce url / list, reset all if false (optional, if omitted it's a getter)
      * @return string|array|null announce url / list or null if not set
@@ -119,7 +134,7 @@ class Torrent {
 			return $this->{'announce-list'} = self::announce_list( isset( $this->{'announce-list'} ) ? $this->{'announce-list'} : $this->announce, $announce );
 		unset( $this->{'announce-list'} );
 		if ( is_array( $announce ) || is_object( $announce ) )
-			if ( ( $this->announce = reset( $announce ) ) && count( $announce ) > 1 )
+			if ( ( $this->announce = self::first_announce( $announce ) ) && count( $announce ) > 1 )
 				return $this->{'announce-list'} = self::announce_list( $announce );
 			else
 				return $this->announce;
@@ -496,6 +511,16 @@ class Torrent {
 		return array_map( create_function( '$a', 'return (array) $a;' ), array_merge( (array) $announce, (array) $merge ) );
 	}
 
+    /** Get the first announce url in a list
+	 * @param array announce list (array of arrays if tiered trackers)
+     * @return string first announce url
+     */
+	static protected function first_announce( $announce ) {
+		while ( is_array( $announce ) )
+			$announce = reset( $announce );
+		return $announce;
+	}
+
     /** Helper to pack data hash
      * @param string data
      * @return string packed data hash
@@ -663,4 +688,5 @@ class Torrent {
     }
 
 }
+
 ?>
