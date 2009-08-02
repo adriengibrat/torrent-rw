@@ -11,59 +11,62 @@
  * send a note to adrien.gibrat@gmail.com so I can mail you a copy.
  *
  * 1) Features:
- * - Decode torrent file or data
- * - Build torrent from source folder/file(s)
+ * - Decode torrent file or data from local file and distant url
+ * - Build torrent from source folder/file(s) or distant url
+ * - Super easy usage & syntax
  * - Silent Exception error system
  *
  * 2) Usage example
  * <code>
-	require_once 'Torrent.php';
-	
-	// get torrent infos
-	$torrent = new Torrent( './test.torrent' );
-	echo '<br>private: ', $torrent->is_private() ? 'yes' : 'no', 
-		 '<br>annonce: ';
-	var_dump( $torrent->announce() );
-	echo '<br>name: ', $torrent->name(), 
-		 '<br>comment: ', $torrent->comment(), 
-		 '<br>piece_length: ', $torrent->piece_length(), 
-		 '<br>size: ', $torrent->size( 2 ),
-		 '<br>hash info: ', $torrent->hash_info(),
-		 '<br>stats: ';
-	var_dump( $torrent->scrape() );
-	echo '<br>content: ';
-	var_dump( $torrent->content() );
-	echo '<br>source: ',
-		 $torrent;
+require_once 'Torrent.php';
 
-	// create torrent
-	$torrent = new Torrent( array( 'test.mp3', 'test.jpg' ), 'http://torrent.tracker/annonce' );
+// create torrent
+$torrent = new Torrent( './path-to-file-or-folder', 'http://torrent.tracker/annonce' );
+if ( ! $error = $torrent->error() ) // error method return the last error message
 	$torrent->save('test.torrent'); // save to disk
+else
+	echo '<br>DEBUG: ',$error;
 
-	// modify torrent
-	$torrent->announce('http://alternate-torrent.tracker/annonce'); // add a tracker
-	$torrent->announce(false); // reset announce trackers
-	$torrent->announce(array('http://torrent.tracker/annonce', 'http://alternate-torrent.tracker/annonce')); // set tracker(s), it also works with a 'one tracker' array...
-	$torrent->announce(array(array('http://torrent.tracker/annonce', 'http://alternate-torrent.tracker/annonce'), 'http://another-torrent.tracker/annonce')); // set tiered trackers
-	$torrent->comment('hello world');
-	$torrent->name('test torrent');
-	$torrent->is_private(true);
-	$torrent->httpseeds('http://file-hosting.domain/path/'); // Bittornado implementation
-	$torrent->url_list(array('http://file-hosting.domain/path/','http://another-file-hosting.domain/path/')); // 
-	GetRight implementation
+// print torrent infos
+$torrent = new Torrent( './test.torrent' );
+echo '<pre>private: ', $torrent->is_private() ? 'yes' : 'no', 
+	 '<br>annonce: ';
+var_dump( $torrent->announce() );
+echo '<br>name: ', $torrent->name(), 
+	 '<br>comment: ', $torrent->comment(), 
+	 '<br>piece_length: ', $torrent->piece_length(), 
+	 '<br>size: ', $torrent->size( 2 ),
+	 '<br>hash info: ', $torrent->hash_info(),
+	 '<br>stats: ';
+var_dump( $torrent->scrape() );
+echo '<br>content: ';
+var_dump( $torrent->content() );
+echo '<br>source: ',
+	 $torrent;
 
-	// print errors
-	if ( $errors = $torrent->errors() )
-		var_dump( $errors );
+// modify torrent
+$torrent->announce('http://alternate-torrent.tracker/annonce'); // add a tracker
+$torrent->announce(false); // reset announce trackers
+$torrent->announce(array('http://torrent.tracker/annonce', 'http://alternate-torrent.tracker/annonce')); // set tracker(s), it also works with a 'one tracker' array...
+$torrent->announce(array(array('http://torrent.tracker/annonce', 'http://alternate-torrent.tracker/annonce'), 'http://another-torrent.tracker/annonce')); // set tiered trackers
+$torrent->comment('hello world');
+$torrent->name('test torrent');
+$torrent->is_private(true);
+$torrent->httpseeds('http://file-hosting.domain/path/'); // Bittornado implementation
+$torrent->url_list(array('http://file-hosting.domain/path/','http://another-file-hosting.domain/path/')); // GetRight implementation
 
-	// send to user
-	$torrent->send();
+// print errors
+if ( $errors = $torrent->errors() ) // errors method return the error stack
+	var_dump( '<br>DEBUG: ', $errors );
+
+// send to user
+//$torrent->send();
  * </code>
  *
  * @author		Adrien Gibrat <adrien.gibrat@gmail.com>
- * @copyleft	2008 - Just use it!
+ * @copyleft		2009 - Just use it!
  * @license		http://www.gnu.org/licenses/gpl.html GNU General Public License version 3
- * @version		Release: 0.7
+ * @version		Release: 0.9
  */
 class Torrent {
 
@@ -92,7 +95,7 @@ class Torrent {
 		if ( is_null( $data ) )
 			return false;
 		if ( $piece_length < 32 || $piece_length > 4096 )
-			return ! array_unshift( self::$errors, new Exception( 'Invalid piece lenth, must be between 32 and 4096' ) );
+			return self::set_error( new Exception( 'Invalid piece lenth, must be between 32 and 4096' ) );
 		if ( is_string( $meta ) )
 			$meta = array( 'announce' => $meta );
 		if ( $this->build( $data, $piece_length * 1024 ) )
@@ -111,7 +114,7 @@ class Torrent {
 	}
 
 	/** Return last error message
-	 * @return string|boolean error message or false if none
+	 * @return string|boolean last error message or false if none
 	 */
 	public function error() {
 		return empty( self::$errors ) ? 
@@ -254,16 +257,16 @@ class Torrent {
 			foreach ( $this->info['files'] as $file )
 				$files[self::path( $file['path'], $this->info['name'] )] = array(
 					'startpiece'	=> floor( $size / $this->info['piece length'] ),
-					'offset'		=> fmod( $size, $this->info['piece length'] ),
-					'size'			=> $size += $file['length'],
-					'endpiece'		=> floor( $size / $this->info['piece length'] )
+					'offset'	=> fmod( $size, $this->info['piece length'] ),
+					'size'		=> $size += $file['length'],
+					'endpiece'	=> floor( $size / $this->info['piece length'] )
 				);
 		elseif ( isset( $this->info['name'] ) )
 				$files[$this->info['name']] = array(
 					'startpiece'	=> 0,
-					'offset'		=> 0,
-					'size'			=> $this->info['length'],
-					'endpiece'		=> floor( $this->info['length'] / $this->info['piece length'] )
+					'offset'	=> 0,
+					'size'		=> $this->info['length'],
+					'endpiece'	=> floor( $this->info['length'] / $this->info['piece length'] )
 				);
 		return $files;
 	}
@@ -291,14 +294,19 @@ class Torrent {
 	 */
 	/* static */ public function scrape ( $announce = null, $hash_info = null ) {
 		if ( ! ini_get( 'allow_url_fopen' ) )
-			return ! array_unshift( self::$errors, new Exception( '"allow_url_fopen" must be enabled' ) );
+			return self::set_error( new Exception( '"allow_url_fopen" must be enabled' ) );
 		$packed_hash = pack('H*', $hash_info ? $hash_info : $this->hash_info() );
-		if ( ! $scrape_data = @file_get_contents( str_ireplace( '/announce', '/scrape', $announce ? $announce : $this->announce ) . '?info_hash=' . urlencode( $packed_hash ) ) )
-			return ! array_unshift( self::$errors, new Exception( 'Tracker request failed' ) );
-		$stats = self::decode_data( $scrape_data );
-		return isset( $stats['files'][$packed_hash] ) ?
-			$stats['files'][$packed_hash] :
-			! array_unshift( self::$errors, new Exception( 'Invalid scrape data' ) );
+		$scrape = array();
+		foreach ( (array) ($announce ? $announce : $this->announce()) as $tier )
+			foreach ( (array) $tier as $tracker ) {
+				if ( ! $scrape_data = @file_get_contents( str_ireplace( array( 'udp://', '/announce' ), array( 'http://', '/scrape' ), $tracker ) . '?info_hash=' . urlencode( $packed_hash ) ) )
+					continue $scrape[$tracker] = self::set_error( new Exception( 'Tracker request failed' ), true );
+				$stats = self::decode_data( $scrape_data );
+				$scrape[$tracker] = isset( $stats['files'][$packed_hash] ) ?
+					$stats['files'][$packed_hash] :
+					self::set_error( new Exception( 'Invalid scrape data' ), true );
+			}
+		return $scrape;
 	}
 
 	/**** Save and Send ****/
@@ -419,14 +427,14 @@ class Torrent {
 		$previous = null;
 		while ( ( $char = self::char( $data ) ) != 'e' ) {
 			if ( $char === false )
-				return ! array_unshift( self::$errors, new Exception( 'Unterminated dictionary' ) );
+				return self::set_error( new Exception( 'Unterminated dictionary' ) );
 			if ( ! ctype_digit( $char ) )
-				return ! array_unshift( self::$errors, new Exception( 'Invalid dictionary key' ) );
+				return self::set_error( new Exception( 'Invalid dictionary key' ) );
 			$key = self::decode_string( $data );
 			if ( isset( $dictionary[$key] ) )
-				return ! array_unshift( self::$errors, new Exception( 'Duplicate dictionary key' ) );
+				return self::set_error( new Exception( 'Duplicate dictionary key' ) );
 			if ( $key < $previous )
-				return ! array_unshift( self::$errors, new Exception( 'Missorted dictionary key' ) );
+				return self::set_error( new Exception( 'Missorted dictionary key' ) );
 			$dictionary[$key] = self::decode_data( $data );
 			$previous = $key;
 		}
@@ -442,7 +450,7 @@ class Torrent {
 		$list = array();
 		while ( ( $char = self::char( $data ) ) != 'e' ) {
 			if ( $char === false )
-				return ! array_unshift( self::$errors, new Exception( 'Unterminated list' ) );
+				return self::set_error( new Exception( 'Unterminated list' ) );
 			$list[] = self::decode_data( $data );
 		}
 		$data = substr( $data, 1 );
@@ -455,12 +463,12 @@ class Torrent {
 	 */
 	static private function decode_string ( & $data ) {
 		if ( self::char( $data ) === '0' && substr( $data, 1, 1 ) != ':' )
-			array_unshift( self::$errors, new Exception( 'Invalid string length, leading zero' ) );
+			self::set_error( new Exception( 'Invalid string length, leading zero' ) );
 		if ( ! $colon = @strpos( $data, ':' ) )
-			return ! array_unshift( self::$errors, new Exception( 'Invalid string length, colon not found' ) );
+			return self::set_error( new Exception( 'Invalid string length, colon not found' ) );
 		$length = intval( substr( $data, 0, $colon ) );
 		if ( $length + $colon + 1 > strlen( $data ) )
-			return ! array_unshift( self::$errors, new Exception( 'Invalid string, input too short for string length' ) );
+			return self::set_error( new Exception( 'Invalid string, input too short for string length' ) );
 		$string = substr( $data, $colon + 1, $length );
 		$data = substr( $data, $colon + $length + 1 );
 		return $string;
@@ -474,13 +482,13 @@ class Torrent {
 		$start = 0;
 		$end	= strpos( $data, 'e');
 		if ( $end === 0 )
-			array_unshift( self::$errors, new Exception( 'Empty integer' ) );
+			self::set_error( new Exception( 'Empty integer' ) );
 		if ( self::char( $data ) == '-' )
 			$start++;
 		if ( substr( $data, $start, 1 ) == '0' && ( $start != 0 || $end > $start + 1 ) )
-			array_unshift( self::$errors, new Exception( 'Leading zero in integer' ) );
+			self::set_error( new Exception( 'Leading zero in integer' ) );
 		if ( ! ctype_digit( substr( $data, $start, $end ) ) )
-			array_unshift( self::$errors, new Exception( 'Non-digit characters in integer' ) );
+			self::set_error( new Exception( 'Non-digit characters in integer' ) );
 		$integer = substr( $data, 0, $end );
 		$data = substr( $data, $end + 1 );
 		return $integer + 0;
@@ -514,6 +522,15 @@ class Torrent {
 		$this->{'created by'}		= 'Torrent PHP Class - Adrien Gibrat';
 		$this->{'creation date'}	= time();
 		return $void;
+	}
+
+	/** Add an error to errors stack
+	 * @param Exception error to add
+	 * @param boolean return error message or not (optional, default to false)
+	 * @return boolean|string return false or error message if requested
+	 */
+	static protected function set_error ( $exception, $message = false ) {
+		return ( array_unshift( self::$errors,  $exception ) && $message ) ? $exception->getMessage() : false;
 	}
 
 	/** Build announce list
@@ -571,16 +588,16 @@ class Torrent {
 	 */
 	private function file ( $file, $piece_length ) {
 		if ( ! $handle = self::fopen( $file, $size = self::filesize( $file ) ) )
-			return ! array_unshift( self::$errors, new Exception( 'Failed to open file: "' . $file . '"' ) );
+			return self::set_error( new Exception( 'Failed to open file: "' . $file . '"' ) );
 		$pieces = '';
 		while ( ! feof( $handle ) )
 			$pieces .= self::pack( fread( $handle, $piece_length ) );
 		fclose( $handle );
 		return array(
-			'length'		=> $size,
-			'name'			=> basename( $file ),
+			'length'	=> $size,
+			'name'		=> basename( $file ),
 			'piece length'	=> $piece_length,
-			'pieces'		=> $pieces
+			'pieces'	=> $pieces
 		);
 	}
 
@@ -598,9 +615,9 @@ class Torrent {
 		$piece	= $pieces = '';
 		foreach ( $files as $i => $file ) {
 			if ( $path != array_intersect_assoc( $file_path = explode( DIRECTORY_SEPARATOR, $file ), $path ) )
-				continue array_unshift( self::$errors, new Exception( 'Files must be in the same folder: "' . $file . '" discarded' ) );
+				continue self::set_error( new Exception( 'Files must be in the same folder: "' . $file . '" discarded' ) );
 			if ( ! $handle = self::fopen( $file, $filesize = self::filesize( $file ) ) )
-				continue array_unshift( self::$errors, new Exception( 'Failed to open file: "' . $file . '" discarded' ) );
+				continue self::set_error( new Exception( 'Failed to open file: "' . $file . '" discarded' ) );
 			while ( ! feof( $handle ) )
 				if ( ( $length = strlen( $piece .= fread( $handle, $length ) ) ) == $piece_length )
 					$pieces .= self::pack( $piece );
@@ -619,10 +636,10 @@ class Torrent {
 				return $this->file( $files[key( $info_files )], $piece_length );
 			default:
 				return array(
-					'files'		 	=> $info_files,
-					'name'			=> end( $path ),
+					'files'		=> $info_files,
+					'name'		=> end( $path ),
 					'piece length'	=> $piece_length,
-					'pieces'		=> $pieces . ( $piece ? self::pack( $piece ) : '' )
+					'pieces'	=> $pieces . ( $piece ? self::pack( $piece ) : '' )
 				);
 		}
 	}
@@ -680,7 +697,7 @@ class Torrent {
 		if ( ( is_null( $size ) ? self::filesize( $file ) : $size ) <= 2 * pow( 1024, 3 ) )
 			return fopen( $file, 'r' );
 		elseif ( PHP_OS != 'Linux' )
-			return ! array_unshift( self::$errors, new Exception( 'File size is greater than 2GB. This is only supported under Linux' ) );
+			return self::set_error( new Exception( 'File size is greater than 2GB. This is only supported under Linux' ) );
 		elseif ( ! is_readable( $file ) )
 			return false;
 		else
