@@ -63,7 +63,7 @@
  * @author		Adrien Gibrat <adrien.gibrat@gmail.com>
  * @copyleft	2008 - Just use it!
  * @license		http://www.gnu.org/licenses/gpl.html GNU General Public License version 3
- * @version		Release: 0.5
+ * @version		Release: 0.7
  */
 class Torrent {
 
