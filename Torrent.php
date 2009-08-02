@@ -22,8 +22,9 @@
 	// get torrent infos
 	$torrent = new Torrent( './test.torrent' );
 	echo '<br>private: ', $torrent->is_private() ? 'yes' : 'no', 
-		 '<br>annonce: ', $torrent->announce(), 
-		 '<br>name: ', $torrent->name(), 
+		 '<br>annonce: ';
+	var_dump( $torrent->announce() );
+	echo '<br>name: ', $torrent->name(), 
 		 '<br>comment: ', $torrent->comment(), 
 		 '<br>piece_length: ', $torrent->piece_length(), 
 		 '<br>size: ', $torrent->size( 2 ),
@@ -73,22 +74,25 @@ class Torrent {
 
 	/** Read and decode torrent file/data OR build a torrent from source folder/file(s)
 	 * Supported signatures:
-	 *  - Torrent( string $torrent );
-	 *  - Torrent( string $torrent, string $announce );
-	 *  - Torrent( string $torrent, array $meta );
-	 *  - Torrent( string $file_or_folder );
-	 *  - Torrent( string $file_or_folder, string $announce_url, [int $piece_length] );
-	 *  - Torrent( string $file_or_folder, array $meta, [int $piece_length] );
-	 *  - Torrent( array $files_list );
-	 *  - Torrent( array $files_list, string $announce_url, [int $piece_length] );
-	 *  - Torrent( array $files_list, array $meta, [int $piece_length] );
-	 * @param string|array torrent to read or source folder/file(s)
+	 * - Torrent(); // get an instance (usefull to scrape an check errors)
+	 * - Torrent( string $torrent ); // analyse a torrent file
+	 * - Torrent( string $torrent, string $announce );
+	 * - Torrent( string $torrent, array $meta );
+	 * - Torrent( string $file_or_folder ); // create a torrent file
+	 * - Torrent( string $file_or_folder, string $announce_url, [int $piece_length] );
+	 * - Torrent( string $file_or_folder, array $meta, [int $piece_length] );
+	 * - Torrent( array $files_list );
+	 * - Torrent( array $files_list, string $announce_url, [int $piece_length] );
+	 * - Torrent( array $files_list, array $meta, [int $piece_length] );
+	 * @param string|array torrent to read or source folder/file(s) (optional, to get an instance)
 	 * @param string|array announce url or meta informations (optional)
 	 * @param int piece length (optional)
 	 */
-	public function __construct ( $data, $meta = array(), $piece_length = 256 ) {
+	public function __construct ( $data = null, $meta = array(), $piece_length = 256 ) {
+		if ( is_null( $data ) )
+			return false;
 		if ( $piece_length < 32 || $piece_length > 4096 )
-			throw new Exception( 'Invalid piece lenth, must be between 32 and 4096' );
+			return ! array_unshift( self::$errors, new Exception( 'Invalid piece lenth, must be between 32 and 4096' ) );
 		if ( is_string( $meta ) )
 			$meta = array( 'announce' => $meta );
 		if ( $this->build( $data, $piece_length * 1024 ) )
@@ -106,8 +110,17 @@ class Torrent {
 		return $this->encode( $this );
 	}
 
+	/** Return last error message
+	 * @return string|boolean error message or false if none
+	 */
+	public function error() {
+		return empty( self::$errors ) ? 
+			false :
+			self::$errors[0]->getMessage();
+	}
+
 	/** Return Errors
-	 * @return array|boolean error list or null if none
+	 * @return array|boolean error list or false if none
 	 */
 	public function errors() {
 		return empty( self::$errors ) ? 
@@ -126,9 +139,9 @@ class Torrent {
 	 */
 	public function announce ( $announce = null ) {
 		if ( is_null( $announce ) )
-			return isset( $this->{'announce-list'} ) ?
-				$this->{'announce-list'} :
-				isset( $this->announce ) ? $this->announce : null;
+			return ! isset( $this->{'announce-list'} ) ?
+				isset( $this->announce ) ? $this->announce : null :
+				$this->{'announce-list'};
 		$this->touch();
 		if ( is_string( $announce ) && isset( $this->announce ) )
 			return $this->{'announce-list'} = self::announce_list( isset( $this->{'announce-list'} ) ? $this->{'announce-list'} : $this->announce, $announce );
@@ -139,7 +152,7 @@ class Torrent {
 			else
 				return $this->announce;
 		if ( ! isset( $this->announce ) && $announce )
-			return $this->announce = $announce;
+			return $this->announce = (string) $announce;
 		unset( $this->announce );
 	}
 
@@ -278,13 +291,14 @@ class Torrent {
 	 */
 	/* static */ public function scrape ( $announce = null, $hash_info = null ) {
 		if ( ! ini_get( 'allow_url_fopen' ) )
-			return ! self::$errors[] = new Exception( '"allow_url_fopen" must be enabled' );
-		$packed_hash = pack('H*', $hash_info ? $hash_info : sha1( self::encode( $this->info ) ) );
-		$scrape_data = file_get_contents( str_ireplace( '/announce', '/scrape', $announce ? $announce : $this->announce ) . '?info_hash=' . urlencode( $packed_hash ) );
+			return ! array_unshift( self::$errors, new Exception( '"allow_url_fopen" must be enabled' ) );
+		$packed_hash = pack('H*', $hash_info ? $hash_info : $this->hash_info() );
+		if ( ! $scrape_data = @file_get_contents( str_ireplace( '/announce', '/scrape', $announce ? $announce : $this->announce ) . '?info_hash=' . urlencode( $packed_hash ) ) )
+			return ! array_unshift( self::$errors, new Exception( 'Tracker request failed' ) );
 		$stats = self::decode_data( $scrape_data );
 		return isset( $stats['files'][$packed_hash] ) ?
 			$stats['files'][$packed_hash] :
-			! self::$errors[] = new Exception( 'Invalid scrape data' );
+			! array_unshift( self::$errors, new Exception( 'Invalid scrape data' ) );
 	}
 
 	/**** Save and Send ****/
@@ -370,10 +384,10 @@ class Torrent {
 	 * @return array decoded torrent data
 	 */
 	static protected function decode ( $string ) {
-		$data = is_file( $string ) ? 
+		$data = is_file( $string ) || self::url_exists( $string ) ? 
 			file_get_contents( $string ) :
 			$string;
-		return self::decode_data( $data );
+		return (array) self::decode_data( $data );
 	}
 
 	/** Decode torrent data
@@ -405,14 +419,14 @@ class Torrent {
 		$previous = null;
 		while ( ( $char = self::char( $data ) ) != 'e' ) {
 			if ( $char === false )
-				throw new Exception( 'Unterminated dictionary' );
+				return ! array_unshift( self::$errors, new Exception( 'Unterminated dictionary' ) );
 			if ( ! ctype_digit( $char ) )
-				throw new Exception( 'Invalid dictionary key' );
+				return ! array_unshift( self::$errors, new Exception( 'Invalid dictionary key' ) );
 			$key = self::decode_string( $data );
 			if ( isset( $dictionary[$key] ) )
-				throw new Exception( 'Duplicate dictionary key' );
+				return ! array_unshift( self::$errors, new Exception( 'Duplicate dictionary key' ) );
 			if ( $key < $previous )
-				throw new Exception( 'Missorted dictionary key' );
+				return ! array_unshift( self::$errors, new Exception( 'Missorted dictionary key' ) );
 			$dictionary[$key] = self::decode_data( $data );
 			$previous = $key;
 		}
@@ -428,7 +442,7 @@ class Torrent {
 		$list = array();
 		while ( ( $char = self::char( $data ) ) != 'e' ) {
 			if ( $char === false )
-				throw new Exception( 'Unterminated list' );
+				return ! array_unshift( self::$errors, new Exception( 'Unterminated list' ) );
 			$list[] = self::decode_data( $data );
 		}
 		$data = substr( $data, 1 );
@@ -441,12 +455,12 @@ class Torrent {
 	 */
 	static private function decode_string ( & $data ) {
 		if ( self::char( $data ) === '0' && substr( $data, 1, 1 ) != ':' )
-			self::$errors[] = new Exception( 'Invalid string length, leading zero' );
+			array_unshift( self::$errors, new Exception( 'Invalid string length, leading zero' ) );
 		if ( ! $colon = @strpos( $data, ':' ) )
-			throw new Exception( 'Invalid string length, colon not found' );
+			return ! array_unshift( self::$errors, new Exception( 'Invalid string length, colon not found' ) );
 		$length = intval( substr( $data, 0, $colon ) );
 		if ( $length + $colon + 1 > strlen( $data ) )
-			throw new Exception( 'Invalid string, input too short for string length' );
+			return ! array_unshift( self::$errors, new Exception( 'Invalid string, input too short for string length' ) );
 		$string = substr( $data, $colon + 1, $length );
 		$data = substr( $data, $colon + $length + 1 );
 		return $string;
@@ -460,13 +474,13 @@ class Torrent {
 		$start = 0;
 		$end	= strpos( $data, 'e');
 		if ( $end === 0 )
-			self::$errors[] = new Exception( 'Empty integer' );
+			array_unshift( self::$errors, new Exception( 'Empty integer' ) );
 		if ( self::char( $data ) == '-' )
 			$start++;
 		if ( substr( $data, $start, 1 ) == '0' && ( $start != 0 || $end > $start + 1 ) )
-			self::$errors[] = new Exception( 'Leading zero in integer' );
+			array_unshift( self::$errors, new Exception( 'Leading zero in integer' ) );
 		if ( ! ctype_digit( substr( $data, $start, $end ) ) )
-			self::$errors[] = new Exception( 'Non-digit characters in integer' );
+			array_unshift( self::$errors, new Exception( 'Non-digit characters in integer' ) );
 		$integer = substr( $data, 0, $end );
 		$data = substr( $data, $end + 1 );
 		return $integer + 0;
@@ -486,7 +500,7 @@ class Torrent {
 			return $this->info = $this->files( $data, $piece_length );
 		elseif ( is_dir( $data ) )
 			return $this->info = $this->folder( $data, $piece_length );
-		elseif ( is_file( $data ) && pathinfo( $data, PATHINFO_EXTENSION ) != 'torrent' )
+		elseif ( ( is_file( $data ) || self::url_exists( $data ) ) && ! self::is_torrent( $data ) )
 			return $this->info = $this->file( $data, $piece_length );
 		else
 			return false;
@@ -541,7 +555,7 @@ class Torrent {
 
 	/** Helper to test if an array is a list
 	 * @param array array to test
-	 * @return boolean is the array a list
+	 * @return boolean is the array a list or not
 	 */
 	static protected function is_list ( $array ) {
 		foreach ( array_keys( $array ) as $key )
@@ -557,7 +571,7 @@ class Torrent {
 	 */
 	private function file ( $file, $piece_length ) {
 		if ( ! $handle = self::fopen( $file, $size = self::filesize( $file ) ) )
-			return ! self::$errors[] = new Exception( 'Failed to open file: "' . $file . '"' );
+			return ! array_unshift( self::$errors, new Exception( 'Failed to open file: "' . $file . '"' ) );
 		$pieces = '';
 		while ( ! feof( $handle ) )
 			$pieces .= self::pack( fread( $handle, $piece_length ) );
@@ -584,9 +598,9 @@ class Torrent {
 		$piece	= $pieces = '';
 		foreach ( $files as $i => $file ) {
 			if ( $path != array_intersect_assoc( $file_path = explode( DIRECTORY_SEPARATOR, $file ), $path ) )
-				continue self::$errors[] = new Exception( 'Files must be in the same folder: "' . $file . '" discarded' );
+				continue array_unshift( self::$errors, new Exception( 'Files must be in the same folder: "' . $file . '" discarded' ) );
 			if ( ! $handle = self::fopen( $file, $filesize = self::filesize( $file ) ) )
-				continue self::$errors[] = new Exception( 'Failed to open file: "' . $file . '" discarded' );
+				continue array_unshift( self::$errors, new Exception( 'Failed to open file: "' . $file . '" discarded' ) );
 			while ( ! feof( $handle ) )
 				if ( ( $length = strlen( $piece .= fread( $handle, $length ) ) ) == $piece_length )
 					$pieces .= self::pack( $piece );
@@ -646,14 +660,15 @@ class Torrent {
 		return round( $size, $precision ) . ' ' . ( $next ? prev( $units ) : end( $units ) );
 	}
 
-	/** Helper to return filesize (even bigger than 2Gb, linux only)
+	/** Helper to return filesize (even bigger than 2Gb -linux only- and distant files size)
 	 * @param string file path
 	 * @return double|boolean filesize or false if error
 	 */
 	static public function filesize ( $file ) {
-		return ( $size = @filesize( $file ) ) !== false ?
-			(double) sprintf( '%u', $size ) :
-			false;
+		if ( is_file( $file ) )
+			return (double) sprintf( '%u', @filesize( $file ) );
+		else if ( $content_length = preg_grep( $pattern = '#^Content-Length:\s+(\d+)$#i', (array) @get_headers( $file ) ) )
+			return (int) preg_replace( $pattern, '$1', reset( $content_length ) );
 	}
 
 	/** Helper to open file to read (even bigger than 2Gb, linux only)
@@ -665,14 +680,14 @@ class Torrent {
 		if ( ( is_null( $size ) ? self::filesize( $file ) : $size ) <= 2 * pow( 1024, 3 ) )
 			return fopen( $file, 'r' );
 		elseif ( PHP_OS != 'Linux' )
-			return ! self::$errors[] = new Exception( 'File size is greater than 2GB. This is only supported under Linux' );
+			return ! array_unshift( self::$errors, new Exception( 'File size is greater than 2GB. This is only supported under Linux' ) );
 		elseif ( ! is_readable( $file ) )
 			return false;
 		else
 			return popen( 'cat ' . escapeshellarg( realpath( $file ) ), 'r' );
 	}
 
-	/** Helper scan directories files and sub directories recursivly
+	/** Helper to scan directories files and sub directories recursivly
 	 * @param string directory path
 	 * @return array directory content list
 	 */
@@ -685,6 +700,22 @@ class Torrent {
 					else
 						$paths[] = $path;
 		return $paths;
+	}
+
+	/** Helper to check if url exists
+	 * @param string url to check
+	 * @return boolean does the url exist or not
+	 */
+	static public function url_exists ( $file ) {
+		return (bool) preg_grep('#^HTTP/.*\s(200|304)\s#', (array) @get_headers( $file ) );
+	}
+
+	/** Helper to check if a file is a torrent
+	 * @param string file location
+	 * @return boolean is the file a torrent or not
+	 */
+	static public function is_torrent ( $file ) {
+		return @file_get_contents( $file, 0, null, 0, 11 ) === 'd8:announce';
 	}
 
 }
