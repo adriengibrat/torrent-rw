@@ -29,12 +29,12 @@ else
 
 // print torrent infos
 $torrent = new Torrent( './test.torrent' );
-echo '<pre>private: ', $torrent->is_private() ? 'yes' : 'no', 
+echo '<pre>private: ', $torrent->is_private() ? 'yes' : 'no',
 	 '<br>annonce: ';
 var_dump( $torrent->announce() );
-echo '<br>name: ', $torrent->name(), 
-	 '<br>comment: ', $torrent->comment(), 
-	 '<br>piece_length: ', $torrent->piece_length(), 
+echo '<br>name: ', $torrent->name(),
+	 '<br>comment: ', $torrent->comment(),
+	 '<br>piece_length: ', $torrent->piece_length(),
 	 '<br>size: ', $torrent->size( 2 ),
 	 '<br>hash info: ', $torrent->hash_info(),
 	 '<br>stats: ';
@@ -63,21 +63,26 @@ if ( $errors = $torrent->errors() ) // errors method return the error stack
 //$torrent->send();
  * </code>
  *
- * @author		Adrien Gibrat <adrien.gibrat@gmail.com>
- * @copyleft		2009 - Just use it!
- * @license		http://www.gnu.org/licenses/gpl.html GNU General Public License version 3
- * @version		Release: 0.9
+ * @author   Adrien Gibrat <adrien.gibrat@gmail.com>
+ * @copyleft 2010 - Just use it!
+ * @license  http://www.gnu.org/licenses/gpl.html GNU General Public License version 3
+ * @version  Release: 1.0
  */
 class Torrent {
+	
+	/**
+	* @const float Default http timeout
+	*/
+	const timeout = 30;
 
 	/**
 	* @var array List of error occured
 	*/
-	static public $errors = array();
+	static protected $errors = array();
 
 	/** Read and decode torrent file/data OR build a torrent from source folder/file(s)
 	 * Supported signatures:
-	 * - Torrent(); // get an instance (usefull to scrape an check errors)
+	 * - Torrent(); // get an instance (usefull to scrape and check errors)
 	 * - Torrent( string $torrent ); // analyse a torrent file
 	 * - Torrent( string $torrent, string $announce );
 	 * - Torrent( string $torrent, array $meta );
@@ -117,7 +122,7 @@ class Torrent {
 	 * @return string|boolean last error message or false if none
 	 */
 	public function error() {
-		return empty( self::$errors ) ? 
+		return empty( self::$errors ) ?
 			false :
 			self::$errors[0]->getMessage();
 	}
@@ -126,7 +131,7 @@ class Torrent {
 	 * @return array|boolean error list or false if none
 	 */
 	public function errors() {
-		return empty( self::$errors ) ? 
+		return empty( self::$errors ) ?
 			false :
 			self::$errors;
 	}
@@ -224,8 +229,8 @@ class Torrent {
 	 * @return string hash info or null if info not set
 	 */
 	public function hash_info () {
-		return isset( $this->info ) ? 
-			sha1( self::encode( $this->info ) ) : 
+		return isset( $this->info ) ?
+			sha1( self::encode( $this->info ) ) :
 			null;
 	}
 
@@ -235,14 +240,14 @@ class Torrent {
 	 */
 	public function content ( $precision = null ) {
 		$files = array();
-		if ( is_array( $this->info['files'] ) )
+		if ( isset( $this->info['files'] ) && is_array( $this->info['files'] ) )
 			foreach ( $this->info['files'] as $file )
-				$files[self::path( $file['path'], $this->info['name'] )] = $precision ? 
-					self::format( $file['length'], $precision ) : 
+				$files[self::path( $file['path'], $this->info['name'] )] = $precision ?
+					self::format( $file['length'], $precision ) :
 					$file['length'];
 		elseif ( isset( $this->info['name'] ) )
-				$files[$this->info['name']] = $precision ? 
-					self::format( $this->info['length'], $precision ) : 
+				$files[$this->info['name']] = $precision ?
+					self::format( $this->info['length'], $precision ) :
 					$this->info['length'];
 		return $files;
 	}
@@ -253,7 +258,7 @@ class Torrent {
 	public function offset () {
 		$files = array();
 		$size = 0;
-		if ( is_array( $this->info['files'] ) )
+		if ( isset( $this->info['files'] ) && is_array( $this->info['files'] ) )
 			foreach ( $this->info['files'] as $file )
 				$files[self::path( $file['path'], $this->info['name'] )] = array(
 					'startpiece'	=> floor( $size / $this->info['piece length'] ),
@@ -277,35 +282,55 @@ class Torrent {
 	 */
 	public function size ( $precision = null ) {
 		$size = 0;
-		if ( is_array( $this->info['files'] ) )
+		if ( isset( $this->info['files'] ) && is_array( $this->info['files'] ) )
 			foreach ( $this->info['files'] as $file )
 				$size += $file['length'];
 		elseif ( isset( $this->info['name'] ) )
 				$size = $this->info['length'];
-		return is_null( $precision ) ? 
+		return is_null( $precision ) ?
 			$size :
 			self::format( $size, $precision );
 	}
 
 	/** Request torrent statistics from scrape page
-	 * @param string announce or scrape page url (optional, to request an alternative tracker BUT mandatory for static call)
-	 * @param string torrent hash info (optional: ONLY for static call)
+	 * @param string|array announce or scrape page url (optional, to request an alternative tracker BUT requirered for static call)
+	 * @param string torrent hash info (optional, requirered ONLY for static call)
+	 * @param float read timeout in seconds (optional, default to self::timeout 30s)
 	 * @return array tracker torrent statistics
 	 */
-	/* static */ public function scrape ( $announce = null, $hash_info = null ) {
-		if ( ! ini_get( 'allow_url_fopen' ) )
-			return self::set_error( new Exception( '"allow_url_fopen" must be enabled' ) );
-		$packed_hash = pack('H*', $hash_info ? $hash_info : $this->hash_info() );
-		$scrape = array();
+	/* static */ public function scrape ( $announce = null, $hash_info = null, $timeout = self::timeout ) {
+		$packed_hash = urlencode( pack('H*', $hash_info ? $hash_info : $this->hash_info() ) );
+		$handles = $scrape = array();
+		$curl = curl_multi_init();
 		foreach ( (array) ($announce ? $announce : $this->announce()) as $tier )
 			foreach ( (array) $tier as $tracker ) {
-				if ( ! $scrape_data = @file_get_contents( str_ireplace( array( 'udp://', '/announce' ), array( 'http://', '/scrape' ), $tracker ) . '?info_hash=' . urlencode( $packed_hash ) ) )
-					continue $scrape[$tracker] = self::set_error( new Exception( 'Tracker request failed' ), true );
-				$stats = self::decode_data( $scrape_data );
-				$scrape[$tracker] = isset( $stats['files'][$packed_hash] ) ?
-					$stats['files'][$packed_hash] :
-					self::set_error( new Exception( 'Invalid scrape data' ), true );
+				$tracker = str_ireplace( array( 'udp://', '/announce', ':80/' ), array( 'http://', '/scrape', '/' ), $tracker );
+				if ( isset( $handles[$tracker] ) )
+					continue;
+				$handles[$tracker] = curl_init( $tracker . '?info_hash=' . $packed_hash );
+				curl_setopt( $handles[$tracker], CURLOPT_RETURNTRANSFER, true );
+				curl_setopt( $handles[$tracker], CURLOPT_TIMEOUT, $timeout );
+				curl_multi_add_handle( $curl, $handles[$tracker] );
 			}
+		do {
+            while ( ( $state = curl_multi_exec( $curl, $running ) ) == CURLM_CALL_MULTI_PERFORM );
+            if( $state != CURLM_OK )
+                continue;
+			while ( $done = curl_multi_info_read( $curl ) ) {
+				$info = curl_getinfo( $done['handle'] );
+            	$tracker = array_shift( explode( '?', $info['url'], 2 ) );
+            	if ( empty( $info['http_code'] ) )
+            		continue $scrape[$tracker] = self::set_error( new Exception( 'Tracker request timeout (' . $timeout . 's)' ), true );
+            	elseif ( $info['http_code'] != 200 )
+            		continue $scrape[$tracker] = self::set_error( new Exception( 'Tracker request failed (' . $info['http_code'] . ' code)' ), true );
+				$stats = self::decode_data( curl_multi_getcontent( $done['handle']  ) );
+				curl_multi_remove_handle( $curl, $done['handle'] );
+				$scrape[$tracker] = empty( $stats['files'] ) ?
+					self::set_error( new Exception( 'Empty scrape data' ), true ) :
+					array_shift( $stats['files'] ) + ( empty( $stats['flags'] ) ? array() : $stats['flags'] );
+			}
+		} while ( $running );
+		curl_multi_close( $curl );
 		return $scrape;
 	}
 
@@ -316,7 +341,7 @@ class Torrent {
 	 * @return boolean file has been saved or not
 	 */
 	public function save ( $filename = null ) {
-		return file_put_contents( is_null( $filename ) ? $this->info['name'] . '.torrent' : $filename, $this );
+		return file_put_contents( is_null( $filename ) ? $this->info['name'] . '.torrent' : $filename, $this->encode( $this ) );
 	}
 
 	/** Send torrent file to client
@@ -324,10 +349,9 @@ class Torrent {
 	 * @return void script exit
 	 */
 	public function send ( $filename = null ) {
-		$data = (string) $this;
+		$data = $this->encode( $this );
 		header( 'Content-type: application/x-bittorrent' );
 		header( 'Content-Length: ' . strlen( $data ) );
-		header( 'Last-Modified: ' . gmdate( 'D, d M Y H:i:s', $this->{'creation date'} ) . ' GMT');
 		header( 'Content-Disposition: attachment; filename="' . ( is_null( $filename ) ? $this->info['name'] . '.torrent' : $filename ) . '"' );
 		exit( $data );
 	}
@@ -338,14 +362,15 @@ class Torrent {
 	 * @param mixed data to encode
 	 * @return string torrent encoded data
 	 */
-	static protected function encode ( $mixed ) {
+	static public function encode ( $mixed ) {
 		switch ( gettype( $mixed ) ) {
 			case 'integer':
 			case 'double':
 				return self::encode_integer( $mixed );
-			case 'array':
-			case 'object':
-				return self::encode_array( (array) $mixed );
+            case 'object':
+            	$mixed = (array) $mixed; //Thanks to W-Shadow: http://w-shadow.com/blog/2008/11/11/parse-edit-and-create-torrent-files-with-php/
+            case 'array':
+				return self::encode_array( $mixed );
 			default:
 				return self::encode_string( (string) $mixed );
 		}
@@ -392,8 +417,8 @@ class Torrent {
 	 * @return array decoded torrent data
 	 */
 	static protected function decode ( $string ) {
-		$data = is_file( $string ) || self::url_exists( $string ) ? 
-			file_get_contents( $string ) :
+		$data = is_file( $string ) || self::url_exists( $string ) ?
+			self::file_get_contents( $string ) :
 			$string;
 		return (array) self::decode_data( $data );
 	}
@@ -659,7 +684,7 @@ class Torrent {
 	 */
 	static private function char ( $data ) {
 		return empty( $data ) ?
-			false : 
+			false :
 			substr( $data, 0, 1 );
 	}
 
@@ -729,10 +754,30 @@ class Torrent {
 
 	/** Helper to check if a file is a torrent
 	 * @param string file location
+	 * @param float http timeout (optional, default to self::timeout 30s)
 	 * @return boolean is the file a torrent or not
 	 */
-	static public function is_torrent ( $file ) {
-		return @file_get_contents( $file, 0, null, 0, 11 ) === 'd8:announce';
+	static public function is_torrent ( $file, $timeout = self::timeout ) {
+		return substr( self::file_get_contents( $file, $timeout ), 0, 11 ) === 'd8:announce';
+	}
+
+	/** Helper to get (distant) file content
+	 * @param string file location
+	 * @param float http timeout (optional, default to self::timeout 30s)
+	 * @return string|boolean file content or false if error
+	 */
+	static public function file_get_contents ( $file, $timeout = self::timeout ) {
+		if ( is_file( $file ) || ini_get( 'allow_url_fopen' ) )
+			return @file_get_contents( $file, false, is_file( $file ) && $timeout ? stream_context_create( array( 'http' => array( 'timeout' => $timeout ) ) ) : null );
+		elseif ( ! function_exists( 'curl_init' ) )
+			return ! self::$errors[] = new Exception( 'Install CURL or enable "allow_url_fopen"' );
+		$handle = curl_init( $file );
+		if ( $timeout )
+			curl_setopt( $handle, CURLOPT_TIMEOUT, $timeout );
+		curl_setopt( $handle, CURLOPT_RETURNTRANSFER, 1 );
+		$content = curl_exec( $handle );
+		curl_close( $handle );
+		return $content;
 	}
 
 }
