@@ -748,8 +748,10 @@ class Torrent {
 	 * @param string url to check
 	 * @return boolean does the url exist or not
 	 */
-	static public function url_exists ( $file ) {
-		return (bool) preg_grep('#^HTTP/.*\s(200|304)\s#', (array) @get_headers( $file ) );
+	static public function url_exists ( $url ) {
+		return preg_match( '#^http(s)?://[a-z0-9-]+(.[a-z0-9-]+)*(:[0-9]+)?(/.*)?$#i', $url ) ?
+			(bool) preg_grep( '#^HTTP/.*\s(200|304)\s#', (array) @get_headers( $url ) ) :
+			false;
 	}
 
 	/** Helper to check if a file is a torrent
