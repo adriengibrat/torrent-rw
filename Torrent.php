@@ -66,7 +66,7 @@ if ( $errors = $torrent->errors() ) // errors method return the error stack
  * @author   Adrien Gibrat <adrien.gibrat@gmail.com>
  * @copyleft 2010 - Just use it!
  * @license  http://www.gnu.org/licenses/gpl.html GNU General Public License version 3
- * @version  Release: 1.0
+ * @version  Release: 1.1 (1 june 2010)
  */
 class Torrent {
 	
@@ -582,7 +582,7 @@ class Torrent {
 	 * @return string packed data hash
 	 */
 	static protected function pack ( & $data ) {
-		return pack('H*', sha1( $data ) ) . ( $data = '' );
+		return pack('H*', sha1( $data ) ) . ( $data = null );
 	}
 
 	/** Helper to build file path
@@ -606,6 +606,23 @@ class Torrent {
 		return true;
 	}
 
+	/** Build pieces depending on piece length from a file handler
+	 * @param ressource file handle
+	 * @param integer piece length
+	 * @return string pieces
+	 */
+	private function pieces ( $handle, $piece_length ) {
+		$length	= $piece_length;
+		$piece	= $pieces = null;
+		while ( ! feof( $handle ) )
+			if ( ( $length = strlen( $piece .= fread( $handle, $length ) ) ) == $piece_length )
+				$pieces .= self::pack( $piece );
+			else
+				$length = $piece_length - $length;
+		fclose( $handle );
+		return $pieces . ( $piece ? self::pack( $piece ) : null );
+	}
+
 	/** Build torrent info from single file
 	 * @param string file path
 	 * @param integer piece length
@@ -614,15 +631,11 @@ class Torrent {
 	private function file ( $file, $piece_length ) {
 		if ( ! $handle = self::fopen( $file, $size = self::filesize( $file ) ) )
 			return self::set_error( new Exception( 'Failed to open file: "' . $file . '"' ) );
-		$pieces = '';
-		while ( ! feof( $handle ) )
-			$pieces .= self::pack( fread( $handle, $piece_length ) );
-		fclose( $handle );
 		return array(
 			'length'	=> $size,
-			'name'		=> basename( $file ),
+			'name'		=> end( explode( DIRECTORY_SEPARATOR, $file ) ),
 			'piece length'	=> $piece_length,
-			'pieces'	=> $pieces
+			'pieces'	=> $this->pieces( $handle, $piece_length )
 		);
 	}
 
@@ -633,40 +646,34 @@ class Torrent {
 	 */
 	private function files ( $files, $piece_length ) {
 		$files = array_map( 'realpath', $files );
+		switch ( count( $files ) ) {
+			case 0:
+				return false;
+			case 1:
+				return $this->file( current( $files ), $piece_length );
+		}
 		sort( $files );
 		usort( $files, create_function( '$a,$b', 'return strrpos($a,DIRECTORY_SEPARATOR)-strrpos($b,DIRECTORY_SEPARATOR);' ) );
 		$path	= explode( DIRECTORY_SEPARATOR, dirname( realpath( current( $files ) ) ) );
-		$length	= $piece_length;
-		$piece	= $pieces = '';
+		$pieces = null;
 		foreach ( $files as $i => $file ) {
 			if ( $path != array_intersect_assoc( $file_path = explode( DIRECTORY_SEPARATOR, $file ), $path ) )
 				continue self::set_error( new Exception( 'Files must be in the same folder: "' . $file . '" discarded' ) );
 			if ( ! $handle = self::fopen( $file, $filesize = self::filesize( $file ) ) )
 				continue self::set_error( new Exception( 'Failed to open file: "' . $file . '" discarded' ) );
-			while ( ! feof( $handle ) )
-				if ( ( $length = strlen( $piece .= fread( $handle, $length ) ) ) == $piece_length )
-					$pieces .= self::pack( $piece );
-				else
-					$length = $piece_length - $length;
-			fclose( $handle );
+			$pieces .= $this->pieces( $handle, $piece_length );
 			$info_files[$i] = array(
 				'length'	=> $filesize,
 				'path'		=> array_diff( $file_path, $path )
 			);
 		}
-		switch ( count( $info_files ) ) {
-			case 0:
-				return false;
-			case 1:
-				return $this->file( $files[key( $info_files )], $piece_length );
-			default:
-				return array(
-					'files'		=> $info_files,
-					'name'		=> end( $path ),
-					'piece length'	=> $piece_length,
-					'pieces'	=> $pieces . ( $piece ? self::pack( $piece ) : '' )
-				);
-		}
+		return array(
+			'files'		=> $info_files,
+			'name'		=> end( $path ),
+			'piece length'	=> $piece_length,
+			'pieces'	=> $pieces . ( $piece ? self::pack( $piece ) : '' )
+		);
+
 	}
 
 	/** Build torrent info from folder content
