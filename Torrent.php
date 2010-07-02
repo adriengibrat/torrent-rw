@@ -2,7 +2,7 @@
 /**
  * Torrent
  *
- * PHP version 5 only
+ * PHP version 5.2+
  *
  * LICENSE: This source file is subject to version 3 of the GNU GPL
  * that is available through the world-wide-web at the following URI:
