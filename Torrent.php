@@ -650,17 +650,10 @@ class Torrent {
 	 */
 	private function files ( $files, $piece_length ) {
 		$files = array_map( 'realpath', $files );
-		switch ( count( $files ) ) {
-			case 0:
-				return false;
-			case 1:
-				return $this->file( current( $files ), $piece_length );
-		}
 		sort( $files );
 		usort( $files, create_function( '$a,$b', 'return strrpos($a,DIRECTORY_SEPARATOR)-strrpos($b,DIRECTORY_SEPARATOR);' ) );
 		$path	= explode( DIRECTORY_SEPARATOR, dirname( realpath( current( $files ) ) ) );
-		$pieces = null;
-		$count = count($files) - 1;
+		$pieces = null; $info_files = array(); $count = count($files) - 1;
 		foreach ( $files as $i => $file ) {
 			if ( $path != array_intersect_assoc( $file_path = explode( DIRECTORY_SEPARATOR, $file ), $path ) )
 				continue self::set_error( new Exception( 'Files must be in the same folder: "' . $file . '" discarded' ) );
@@ -772,26 +765,35 @@ class Torrent {
 	 * @return boolean is the file a torrent or not
 	 */
 	static public function is_torrent ( $file, $timeout = self::timeout ) {
-		return substr( self::file_get_contents( $file, $timeout ), 0, 11 ) === 'd8:announce';
+		return self::file_get_contents( $file, $timeout, 0, 11 ) === 'd8:announce';
 	}
 
 	/** Helper to get (distant) file content
 	 * @param string file location
 	 * @param float http timeout (optional, default to self::timeout 30s)
+	 * @param integer starting offset (optional, default to null)
+	 * @param integer content length (optional, default to null)
 	 * @return string|boolean file content or false if error
 	 */
-	static public function file_get_contents ( $file, $timeout = self::timeout ) {
-		if ( is_file( $file ) || ini_get( 'allow_url_fopen' ) )
-			return @file_get_contents( $file, false, is_file( $file ) && $timeout ? stream_context_create( array( 'http' => array( 'timeout' => $timeout ) ) ) : null );
-		elseif ( ! function_exists( 'curl_init' ) )
+	static public function file_get_contents ( $file, $timeout = self::timeout, $offset = null, $length = null ) {
+		if ( is_file( $file ) || ini_get( 'allow_url_fopen' ) ) {
+			$context = ! is_file( $file ) && $timeout ? 
+				stream_context_create( array( 'http' => array( 'timeout' => $timeout ) ) ) : 
+				null;
+			return ( $offset || $length ) ? 
+				@file_get_contents( $file, false, $context, $offset, $length ) : 
+				@file_get_contents( $file, false, $context );
+		} elseif ( ! function_exists( 'curl_init' ) )
 			return ! self::$errors[] = new Exception( 'Install CURL or enable "allow_url_fopen"' );
 		$handle = curl_init( $file );
 		if ( $timeout )
 			curl_setopt( $handle, CURLOPT_TIMEOUT, $timeout );
+		if ( $offset || $length )
+			curl_setopt( $handle, CURLOPT_RANGE, $offset . '-' . ( $offset + $length ) );
 		curl_setopt( $handle, CURLOPT_RETURNTRANSFER, 1 );
 		$content = curl_exec( $handle );
 		curl_close( $handle );
-		return $content;
+		return $offset || $length ? substr( $content, $offset, $length) : $content;
 	}
 
 }
