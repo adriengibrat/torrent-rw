@@ -794,7 +794,7 @@ class Torrent {
 		curl_setopt( $handle, CURLOPT_RETURNTRANSFER, 1 );
 		$content = curl_exec( $handle );
 		curl_close( $handle );
-		return $offset || $length ? substr( $content, $offset, $length) : $content;
+		return $length ? substr( $content, 0, $length) : $content; // be sure to return the good length
 	}
 
 }
