@@ -64,6 +64,7 @@ if ( $errors = $torrent->errors() ) // errors method return the error stack
  * </code>
  *
  * @author   Adrien Gibrat <adrien.gibrat@gmail.com>
+ * @tester   Jeong, official tester ;) Thanks for your precious feedback
  * @copyleft 2010 - Just use it!
  * @license  http://www.gnu.org/licenses/gpl.html GNU General Public License version 3
  * @version  Release: 1.2 (6 july 2010)
