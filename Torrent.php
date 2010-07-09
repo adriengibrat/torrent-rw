@@ -781,20 +781,25 @@ class Torrent {
 			$context = ! is_file( $file ) && $timeout ? 
 				stream_context_create( array( 'http' => array( 'timeout' => $timeout ) ) ) : 
 				null;
-			return ( $offset || $length ) ? 
+			return $offset ? $length ?
 				@file_get_contents( $file, false, $context, $offset, $length ) : 
+				@file_get_contents( $file, false, $context, $offset ) : 
 				@file_get_contents( $file, false, $context );
 		} elseif ( ! function_exists( 'curl_init' ) )
-			return ! self::$errors[] = new Exception( 'Install CURL or enable "allow_url_fopen"' );
+			return self::set_error( new Exception( 'Install CURL or enable "allow_url_fopen"' ) );
 		$handle = curl_init( $file );
 		if ( $timeout )
 			curl_setopt( $handle, CURLOPT_TIMEOUT, $timeout );
 		if ( $offset || $length )
-			curl_setopt( $handle, CURLOPT_RANGE, $offset . '-' . ( $offset + $length ) );
+			curl_setopt( $handle, CURLOPT_RANGE, $offset . '-' . ( $length ? $offset + $length -1 : null ) );
 		curl_setopt( $handle, CURLOPT_RETURNTRANSFER, 1 );
 		$content = curl_exec( $handle );
+		$size = curl_getinfo( $handle, CURLINFO_CONTENT_LENGTH_DOWNLOAD );
 		curl_close( $handle );
-		return $length ? substr( $content, 0, $length) : $content; // be sure to return the good length
+		return ( $offset && $size == -1 ) || ( $length && $length != $size ) ? $length ?
+			substr( $content, $offset, $length) :
+			substr( $content, $offset) :
+			$content;
 	}
 
 }
