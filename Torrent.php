@@ -2,7 +2,7 @@
 /**
  * Torrent
  *
- * PHP version 5.2+
+ * PHP version 5.2+ (with cURL extention enabled)
  *
  * LICENSE: This source file is subject to version 3 of the GNU GPL
  * that is available through the world-wide-web at the following URI:
@@ -293,7 +293,7 @@ class Torrent {
 			self::format( $size, $precision );
 	}
 
-	/** Request torrent statistics from scrape page
+	/** Request torrent statistics from scrape page USING CURL!!
 	 * @param string|array announce or scrape page url (optional, to request an alternative tracker BUT requirered for static call)
 	 * @param string torrent hash info (optional, requirered ONLY for static call)
 	 * @param float read timeout in seconds (optional, default to self::timeout 30s)
@@ -302,6 +302,8 @@ class Torrent {
 	/* static */ public function scrape ( $announce = null, $hash_info = null, $timeout = self::timeout ) {
 		$packed_hash = urlencode( pack('H*', $hash_info ? $hash_info : $this->hash_info() ) );
 		$handles = $scrape = array();
+		if ( ! function_exists( 'curl_multi_init' ) )
+			return self::set_error( new Exception( 'Install CURL with "curl_multi_init" enabled' ) );
 		$curl = curl_multi_init();
 		foreach ( (array) ($announce ? $announce : $this->announce()) as $tier )
 			foreach ( (array) $tier as $tracker ) {
@@ -781,7 +783,7 @@ class Torrent {
 			$context = ! is_file( $file ) && $timeout ? 
 				stream_context_create( array( 'http' => array( 'timeout' => $timeout ) ) ) : 
 				null;
-			return $offset ? $length ?
+			return ! is_null( $offset ) ? $length ?
 				@file_get_contents( $file, false, $context, $offset, $length ) : 
 				@file_get_contents( $file, false, $context, $offset ) : 
 				@file_get_contents( $file, false, $context );
