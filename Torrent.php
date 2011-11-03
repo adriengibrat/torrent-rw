@@ -1,4 +1,4 @@
-<?php
+mimi<?php
 /**
  * Torrent
  *
@@ -370,9 +370,9 @@ class Torrent {
 			case 'integer':
 			case 'double':
 				return self::encode_integer( $mixed );
-            case 'object':
-            	$mixed = (array) $mixed; //Thanks to W-Shadow: http://w-shadow.com/blog/2008/11/11/parse-edit-and-create-torrent-files-with-php/
-            case 'array':
+			case 'object':
+				$mixed = get_object_vars( $mixed );
+			case 'array':
 				return self::encode_array( $mixed );
 			default:
 				return self::encode_string( (string) $mixed );
