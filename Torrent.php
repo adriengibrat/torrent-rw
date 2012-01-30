@@ -547,7 +547,7 @@ class Torrent {
 	 * @return any param
 	 */
 	protected function touch ( $void = null ) {
-		$this->{'created by'}		= 'Torrent PHP Class - Adrien Gibrat';
+		$this->{'created by'}		= 'Torrent RW PHP Class - http://github.com/adriengibrat/torrent-rw';
 		$this->{'creation date'}	= time();
 		return $void;
 	}
