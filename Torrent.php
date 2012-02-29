@@ -768,7 +768,7 @@ class Torrent {
 	 * @return boolean is the file a torrent or not
 	 */
 	static public function is_torrent ( $file, $timeout = self::timeout ) {
-		return self::file_get_contents( $file, $timeout, 0, 11 ) === 'd8:announce';
+		return self::file_get_contents( $file, $timeout, 0, 11 ) === 'd8:announce' || self::file_get_contents( $file, $timeout, 0, 14 ) === 'd10:created by';
 	}
 
 	/** Helper to get (distant) file content
