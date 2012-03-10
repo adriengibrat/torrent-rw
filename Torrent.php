@@ -321,7 +321,8 @@ class Torrent {
                 continue;
 			while ( $done = curl_multi_info_read( $curl ) ) {
 				$info = curl_getinfo( $done['handle'] );
-		            	$tracker = array_shift( explode( '?', $info['url'], 2 ) );
+				$tracker = explode( '?', $info['url'], 2 );
+				$tracker = array_shift( $tracker );
 		            	if ( empty( $info['http_code'] ) ) {
 		            		$scrape[$tracker] = self::set_error( new Exception( 'Tracker request timeout (' . $timeout . 's)' ), true );
 		            		continue;
