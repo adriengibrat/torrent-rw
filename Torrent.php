@@ -69,6 +69,7 @@ if ( $errors = $torrent->errors() ) // errors method return the error stack
  * @license  http://www.gnu.org/licenses/gpl.html GNU General Public License version 3
  * @version  Release: 1.2 (6 july 2010)
  */
+
 class Torrent {
 	
 	/**
@@ -362,6 +363,15 @@ class Torrent {
 		header( 'Content-Disposition: attachment; filename="' . ( is_null( $filename ) ? $this->info['name'] . '.torrent' : $filename ) . '"' );
 		exit( $data );
 	}
+
+	/** Get magnet link
+	 * @param boolean html encode ampersand, default true (optional)
+	 * @return string magnet link
+	 */
+	public function magnet ( $html = true ) {
+		$ampersand = $html ? '&amp;' : '&';
+		return sprintf( 'magnet:?xt=urn:btih:%s' . $ampersand . 'dn=%s' . $ampersand . 'xl=%d' . $ampersand . 'tr=%s', $this->hash_info(), $this->name(), $this->size(), implode( $ampersand .'tr=', self::untier( $this->announce() ) ) );
+	}	
 
 	/**** Encode BitTorrent ****/
 
@@ -808,6 +818,18 @@ class Torrent {
 			$content;
 	}
 
-}
+	/** Flatten announces list
+	 * @param array announces list
+	 * @return array flattened annonces list
+	 */
+	static public function untier( $announces ) {
+		$list = array();
+		foreach ( (array) $announces as $tier ) {
+			is_array( $tier ) ? 
+				$list = array_merge( $list, $tier ) :
+				array_push( $list, $tier );
+		}
+		return $list;
+	}
 
-?>
+}
