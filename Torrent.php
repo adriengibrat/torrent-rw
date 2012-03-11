@@ -20,21 +20,13 @@
  * <code>
 require_once 'Torrent.php';
 
-// create torrent
-$torrent = new Torrent( './path-to-file-or-folder', 'http://torrent.tracker/annonce' );
-if ( ! $error = $torrent->error() ) // error method return the last error message
-	$torrent->save('test.torrent'); // save to disk
-else
-	echo '<br>DEBUG: ',$error;
-
-// print torrent infos
+// get torrent infos
 $torrent = new Torrent( './test.torrent' );
-echo '<pre>private: ', $torrent->is_private() ? 'yes' : 'no',
-	 '<br>annonce: ';
-var_dump( $torrent->announce() );
-echo '<br>name: ', $torrent->name(),
-	 '<br>comment: ', $torrent->comment(),
-	 '<br>piece_length: ', $torrent->piece_length(),
+echo '<br>private: ', $torrent->is_private() ? 'yes' : 'no', 
+	 '<br>annonce: ', $torrent->announce(), 
+	 '<br>name: ', $torrent->name(), 
+	 '<br>comment: ', $torrent->comment(), 
+	 '<br>piece_length: ', $torrent->piece_length(), 
 	 '<br>size: ', $torrent->size( 2 ),
 	 '<br>hash info: ', $torrent->hash_info(),
 	 '<br>stats: ';
@@ -43,6 +35,13 @@ echo '<br>content: ';
 var_dump( $torrent->content() );
 echo '<br>source: ',
 	 $torrent;
+
+// get magnet link
+$torrent->magnet(); // use $torrent->magnet( false ); to get non html encoded ampersand
+
+// create torrent
+$torrent = new Torrent( array( 'test.mp3', 'test.jpg' ), 'http://torrent.tracker/annonce' );
+$torrent->save('test.torrent'); // save to disk
 
 // modify torrent
 $torrent->announce('http://alternate-torrent.tracker/annonce'); // add a tracker
@@ -53,14 +52,15 @@ $torrent->comment('hello world');
 $torrent->name('test torrent');
 $torrent->is_private(true);
 $torrent->httpseeds('http://file-hosting.domain/path/'); // Bittornado implementation
-$torrent->url_list(array('http://file-hosting.domain/path/','http://another-file-hosting.domain/path/')); // GetRight implementation
+$torrent->url_list(array('http://file-hosting.domain/path/','http://another-file-hosting.domain/path/')); // 
+GetRight implementation
 
 // print errors
-if ( $errors = $torrent->errors() ) // errors method return the error stack
-	var_dump( '<br>DEBUG: ', $errors );
+if ( $errors = $torrent->errors() )
+	var_dump( $errors );
 
 // send to user
-//$torrent->send();
+$torrent->send();
  * </code>
  *
  * @author   Adrien Gibrat <adrien.gibrat@gmail.com>
