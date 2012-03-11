@@ -370,7 +370,7 @@ class Torrent {
 	 */
 	public function magnet ( $html = true ) {
 		$ampersand = $html ? '&amp;' : '&';
-		return sprintf( 'magnet:?xt=urn:btih:%s' . $ampersand . 'dn=%s' . $ampersand . 'xl=%d' . $ampersand . 'tr=%s', $this->hash_info(), $this->name(), $this->size(), implode( $ampersand .'tr=', self::untier( $this->announce() ) ) );
+		return sprintf( 'magnet:?xt=urn:btih:%2$s%1$sdn=%3$s%1$sxl=%4$d%1$str=%5$s', $ampersand, $this->hash_info(), urlencode( $this->name() ), $this->size(), implode( $ampersand .'tr=', self::untier( $this->announce() ) ) );
 	}	
 
 	/**** Encode BitTorrent ****/
@@ -826,7 +826,7 @@ class Torrent {
 		$list = array();
 		foreach ( (array) $announces as $tier ) {
 			is_array( $tier ) ? 
-				$list = array_merge( $list, $tier ) :
+				$list = array_merge( $list, self::untier( $tier ) ) :
 				array_push( $list, $tier );
 		}
 		return $list;
