@@ -672,10 +672,14 @@ class Torrent {
 		$path	= explode( DIRECTORY_SEPARATOR, dirname( realpath( current( $files ) ) ) );
 		$pieces = null; $info_files = array(); $count = count($files) - 1;
 		foreach ( $files as $i => $file ) {
-			if ( $path != array_intersect_assoc( $file_path = explode( DIRECTORY_SEPARATOR, $file ), $path ) )
-				continue self::set_error( new Exception( 'Files must be in the same folder: "' . $file . '" discarded' ) );
-			if ( ! $handle = self::fopen( $file, $filesize = self::filesize( $file ) ) )
-				continue self::set_error( new Exception( 'Failed to open file: "' . $file . '" discarded' ) );
+			if ( $path != array_intersect_assoc( $file_path = explode( DIRECTORY_SEPARATOR, $file ), $path ) ) {
+				self::set_error( new Exception( 'Files must be in the same folder: "' . $file . '" discarded' ) );
+				continue;
+			}
+			if ( ! $handle = self::fopen( $file, $filesize = self::filesize( $file ) ) ) {
+				self::set_error( new Exception( 'Failed to open file: "' . $file . '" discarded' ) );
+				continue;
+			}
 			$pieces .= $this->pieces( $handle, $piece_length, $count == $i );
 			$info_files[] = array(
 				'length'	=> $filesize,
