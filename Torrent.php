@@ -64,7 +64,7 @@ $torrent->send();
  * </code>
  *
  * @author   Adrien Gibrat <adrien.gibrat@gmail.com>
- * @tester   Jeong, official tester ;) Thanks for your precious feedback
+ * @tester   Jeong, Anton, dokcharlie, official testers ;) Thanks for your precious feedback
  * @copyleft 2010 - Just use it!
  * @license  http://www.gnu.org/licenses/gpl.html GNU General Public License version 3
  * @version  Release: 1.2 (6 july 2010)
@@ -317,21 +317,21 @@ class Torrent {
 				curl_multi_add_handle( $curl, $handles[$tracker] );
 			}
 		do {
-            while ( ( $state = curl_multi_exec( $curl, $running ) ) == CURLM_CALL_MULTI_PERFORM );
-            if( $state != CURLM_OK )
-                continue;
+			while ( ( $state = curl_multi_exec( $curl, $running ) ) == CURLM_CALL_MULTI_PERFORM );
+				if( $state != CURLM_OK )
+					continue;
 			while ( $done = curl_multi_info_read( $curl ) ) {
 				$info = curl_getinfo( $done['handle'] );
 				$tracker = explode( '?', $info['url'], 2 );
 				$tracker = array_shift( $tracker );
-		            	if ( empty( $info['http_code'] ) ) {
-		            		$scrape[$tracker] = self::set_error( new Exception( 'Tracker request timeout (' . $timeout . 's)' ), true );
-		            		continue;
-		            	} elseif ( $info['http_code'] != 200 ) {
-		            		$scrape[$tracker] = self::set_error( new Exception( 'Tracker request failed (' . $info['http_code'] . ' code)' ), true );
+				if ( empty( $info['http_code'] ) ) {
+					$scrape[$tracker] = self::set_error( new Exception( 'Tracker request timeout (' . $timeout . 's)' ), true );
 					continue;
-		            	}
-				$stats = self::decode_data( curl_multi_getcontent( $done['handle']  ) );
+				} elseif ( $info['http_code'] != 200 ) {
+					$scrape[$tracker] = self::set_error( new Exception( 'Tracker request failed (' . $info['http_code'] . ' code)' ), true );
+					continue;
+				}
+				$stats = self::decode_data( curl_multi_getcontent( $done['handle'] ) );
 				curl_multi_remove_handle( $curl, $done['handle'] );
 				$scrape[$tracker] = empty( $stats['files'] ) ?
 					self::set_error( new Exception( 'Empty scrape data' ), true ) :
@@ -572,7 +572,7 @@ class Torrent {
 	 * @return boolean|string return false or error message if requested
 	 */
 	static protected function set_error ( $exception, $message = false ) {
-		return ( array_unshift( self::$errors,  $exception ) && $message ) ? $exception->getMessage() : false;
+		return ( array_unshift( self::$errors, $exception ) && $message ) ? $exception->getMessage() : false;
 	}
 
 	/** Build announce list
