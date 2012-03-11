@@ -33,6 +33,9 @@ var_dump( $torrent->content() );
 echo '<br>source: ',
 	 $torrent;
 
+// get magnet link
+$torrent->magnet(); // use $torrent->magnet( false ); to get non html encoded ampersand
+
 // create torrent
 $torrent = new Torrent( array( 'test.mp3', 'test.jpg' ), 'http://torrent.tracker/annonce' );
 $torrent->save('test.torrent'); // save to disk
