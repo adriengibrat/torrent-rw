@@ -652,9 +652,10 @@ class Torrent {
 	private function file ( $file, $piece_length ) {
 		if ( ! $handle = self::fopen( $file, $size = self::filesize( $file ) ) )
 			return self::set_error( new Exception( 'Failed to open file: "' . $file . '"' ) );
+		$path = explode( DIRECTORY_SEPARATOR, $file );
 		return array(
 			'length'	=> $size,
-			'name'		=> end( explode( DIRECTORY_SEPARATOR, $file ) ),
+			'name'		=> end( $path ),
 			'piece length'	=> $piece_length,
 			'pieces'	=> $this->pieces( $handle, $piece_length )
 		);
