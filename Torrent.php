@@ -331,7 +331,8 @@ class Torrent {
 					$scrape[$tracker] = self::set_error( new Exception( 'Tracker request failed (' . $info['http_code'] . ' code)' ), true );
 					continue;
 				}
-				$stats = self::decode_data( curl_multi_getcontent( $done['handle'] ) );
+				$data = curl_multi_getcontent( $done['handle'] );
+				$stats = self::decode_data( $data );
 				curl_multi_remove_handle( $curl, $done['handle'] );
 				$scrape[$tracker] = empty( $stats['files'] ) ?
 					self::set_error( new Exception( 'Empty scrape data' ), true ) :
