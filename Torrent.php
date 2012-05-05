@@ -80,7 +80,7 @@ class Torrent {
 	/**
 	* @var array List of error occured
 	*/
-	static protected $errors = array();
+	static protected $_errors = array();
 
 	/** Read and decode torrent file/data OR build a torrent from source folder/file(s)
 	 * Supported signatures:
@@ -124,18 +124,18 @@ class Torrent {
 	 * @return string|boolean last error message or false if none
 	 */
 	public function error() {
-		return empty( self::$errors ) ?
+		return empty( self::$_errors ) ?
 			false :
-			self::$errors[0]->getMessage();
+			self::$_errors[0]->getMessage();
 	}
 
 	/** Return Errors
 	 * @return array|boolean error list or false if none
 	 */
 	public function errors() {
-		return empty( self::$errors ) ?
+		return empty( self::$_errors ) ?
 			false :
-			self::$errors;
+			self::$_errors;
 	}
 
 	/**** Getters and setters ****/
@@ -573,7 +573,7 @@ class Torrent {
 	 * @return boolean|string return false or error message if requested
 	 */
 	static protected function set_error ( $exception, $message = false ) {
-		return ( array_unshift( self::$errors, $exception ) && $message ) ? $exception->getMessage() : false;
+		return ( array_unshift( self::$_errors, $exception ) && $message ) ? $exception->getMessage() : false;
 	}
 
 	/** Build announce list
