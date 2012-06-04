@@ -523,18 +523,18 @@ class Torrent {
 	 */
 	static private function decode_integer ( & $data ) {
 		$start = 0;
-		$end	= strpos( $data, 'e');
+		$end   = strpos( $data, 'e');
 		if ( $end === 0 )
 			self::set_error( new Exception( 'Empty integer' ) );
 		if ( self::char( $data ) == '-' )
 			$start++;
-		if ( substr( $data, $start, 1 ) == '0' && ( $start != 0 || $end > $start + 1 ) )
+		if ( substr( $data, $start, 1 ) == '0' && $end > $start + 1 )
 			self::set_error( new Exception( 'Leading zero in integer' ) );
-		if ( ! ctype_digit( substr( $data, $start, $end ) ) )
+		if ( ! ctype_digit( substr( $data, $start, $start ? $end - 1 : $end ) ) )
 			self::set_error( new Exception( 'Non-digit characters in integer' ) );
 		$integer = substr( $data, 0, $end );
-		$data = substr( $data, $end + 1 );
-		return $integer + 0;
+		$data    = substr( $data, $end + 1 );
+		return (int) $integer;
 	}
 
 	/**** Internal Helpers ****/
