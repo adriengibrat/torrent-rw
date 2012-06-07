@@ -532,8 +532,9 @@ class Torrent {
 			self::set_error( new Exception( 'Leading zero in integer' ) );
 		if ( ! ctype_digit( substr( $data, $start, $start ? $end - 1 : $end ) ) )
 			self::set_error( new Exception( 'Non-digit characters in integer' ) );
+		$integer = substr( $data, 0, $end );
 		$data    = substr( $data, $end + 1 );
-		return 0 + substr( $data, 0, $end );
+		return 0 + $integer;
 	}
 
 	/**** Internal Helpers ****/
