@@ -653,6 +653,8 @@ class Torrent {
 	private function file ( $file, $piece_length ) {
 		if ( ! $handle = self::fopen( $file, $size = self::filesize( $file ) ) )
 			return self::set_error( new Exception( 'Failed to open file: "' . $file . '"' ) );
+		if ( self::is_url( $file ) )
+			$this->url_list( $file );
 		$path = explode( DIRECTORY_SEPARATOR, $file );
 		return array(
 			'length'	=> $size,
@@ -668,11 +670,16 @@ class Torrent {
 	 * @return array torrent info
 	 */
 	private function files ( $files, $piece_length ) {
-		$files = array_map( 'realpath', $files );
+		if ( ! self::is_url( current( $files ) ) )
+			$files = array_map( 'realpath', $files );
 		sort( $files );
 		usort( $files, create_function( '$a,$b', 'return strrpos($a,DIRECTORY_SEPARATOR)-strrpos($b,DIRECTORY_SEPARATOR);' ) );
-		$path	= explode( DIRECTORY_SEPARATOR, dirname( realpath( current( $files ) ) ) );
-		$pieces = null; $info_files = array(); $count = count($files) - 1;
+		$first	= current( $files );
+		$root	= dirname( $first );
+		if ( $url = self::is_url( $first ) )
+			$this->url_list( dirname( $root ) . DIRECTORY_SEPARATOR );
+		$path	= explode( DIRECTORY_SEPARATOR, dirname( $url ? $first : realpath( $first ) ) );
+		$pieces = null; $info_files = array(); $count = count( $files ) - 1;
 		foreach ( $files as $i => $file ) {
 			if ( $path != array_intersect_assoc( $file_path = explode( DIRECTORY_SEPARATOR, $file ), $path ) ) {
 				self::set_error( new Exception( 'Files must be in the same folder: "' . $file . '" discarded' ) );
@@ -772,23 +779,30 @@ class Torrent {
 		return $paths;
 	}
 
+	/** Helper to check if string is an url (http)
+	 * @param string url to check
+	 * @return boolean is string an url
+	 */
+	static public function is_url ( $url ) {
+		return preg_match( '#^http(s)?://[a-z0-9-]+(.[a-z0-9-]+)*(:[0-9]+)?(/.*)?$#i', $url );
+	}
+
 	/** Helper to check if url exists
 	 * @param string url to check
 	 * @return boolean does the url exist or not
 	 */
 	static public function url_exists ( $url ) {
-		return preg_match( '#^http(s)?://[a-z0-9-]+(.[a-z0-9-]+)*(:[0-9]+)?(/.*)?$#i', $url ) ?
-			(bool) preg_grep( '#^HTTP/.*\s(200|304)\s#', (array) @get_headers( $url ) ) :
+		return self::is_url( $url ) ?
+			(bool) self::filesize ( $url ) :
 			false;
 	}
-
 	/** Helper to check if a file is a torrent
 	 * @param string file location
 	 * @param float http timeout (optional, default to self::timeout 30s)
 	 * @return boolean is the file a torrent or not
 	 */
 	static public function is_torrent ( $file, $timeout = self::timeout ) {
-		return self::file_get_contents( $file, $timeout, 0, 11 ) === 'd8:announce' || self::file_get_contents( $file, $timeout, 0, 14 ) === 'd10:created by';
+		return ( $start = self::file_get_contents( $file, $timeout, 0, 11 ) ) &&  $start === 'd8:announce' || $start === 'd10:created';
 	}
 
 	/** Helper to get (distant) file content
