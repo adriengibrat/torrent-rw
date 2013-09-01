@@ -802,7 +802,11 @@ class Torrent {
 	 * @return boolean is the file a torrent or not
 	 */
 	static public function is_torrent ( $file, $timeout = self::timeout ) {
-		return ( $start = self::file_get_contents( $file, $timeout, 0, 11 ) ) &&  $start === 'd8:announce' || $start === 'd10:created';
+		return ( $start = self::file_get_contents( $file, $timeout, 0, 11 ) )
+			 && $start === 'd8:announce'
+			 || $start === 'd10:created'
+			 || $start === 'd13:creatio'
+			 || substr($start, 0, 3) === 'd9:';
 	}
 
 	/** Helper to get (distant) file content
