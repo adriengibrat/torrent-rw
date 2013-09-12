@@ -39,6 +39,10 @@ $torrent->magnet(); // use $torrent->magnet( false ); to get non html encoded am
 // create torrent
 $torrent = new Torrent( array( 'test.mp3', 'test.jpg' ), 'http://torrent.tracker/annonce' );
 $torrent->save('test.torrent'); // save to disk
+//if you want get magnet link with multiple tracker you have to
+$torrent = new Torrent( array( 'test.mp3', 'test.jpg');
+foreach($trackers as $tracker)
+	$torrent->announce($tracker);
 
 // modify torrent
 $torrent->announce('http://alternate-torrent.tracker/annonce'); // add a tracker
