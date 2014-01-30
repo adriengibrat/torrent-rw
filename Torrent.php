@@ -807,7 +807,7 @@ class Torrent {
 			 || $start === 'd10:created'
 			 || $start === 'd13:creatio'
 			 || substr($start, 0, 7) === 'd4:info'
-			 || substr($start, 0, 3) === 'd9:'; // <- WTF ?
+			 || substr($start, 0, 3) === 'd9:'; // @see https://github.com/adriengibrat/torrent-rw/pull/17
 	}
 
 	/** Helper to get (distant) file content
