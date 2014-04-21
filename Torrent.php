@@ -435,7 +435,7 @@ class Torrent {
 	 * @return array decoded torrent data
 	 */
 	static protected function decode ( $string ) {
-		$data = is_file( $string ) || self::url_exists( $string ) ?
+		$data = @is_file( $string ) || self::url_exists( $string ) ?
 			self::file_get_contents( $string ) :
 			$string;
 		return (array) self::decode_data( $data );
@@ -549,9 +549,9 @@ class Torrent {
 			return false;
 		elseif ( is_array( $data ) && self::is_list( $data ) )
 			return $this->info = $this->files( $data, $piece_length );
-		elseif ( is_dir( $data ) )
+		elseif ( @is_dir( $data ) )
 			return $this->info = $this->folder( $data, $piece_length );
-		elseif ( ( is_file( $data ) || self::url_exists( $data ) ) && ! self::is_torrent( $data ) )
+		elseif ( ( @is_file( $data ) || self::url_exists( $data ) ) && ! self::is_torrent( $data ) )
 			return $this->info = $this->file( $data, $piece_length );
 		else
 			return false;
