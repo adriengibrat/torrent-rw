@@ -806,6 +806,7 @@ class Torrent {
 			 && $start === 'd8:announce'
 			 || $start === 'd10:created'
 			 || $start === 'd13:creatio'
+			 || $start === 'd13:announce'
 			 || substr($start, 0, 7) === 'd4:info'
 			 || substr($start, 0, 3) === 'd9:'; // @see https://github.com/adriengibrat/torrent-rw/pull/17
 	}
