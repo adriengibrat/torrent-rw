@@ -196,9 +196,9 @@ class Torrent {
 			$this->touch( $this->info['private'] = $private ? 1 : 0 );
 	}
 
-	/** Getter and setter of torrent name
-	 * @param null|string name (optional, if omitted it's a getter)
-	 * @return string|null name or null if not set
+	/** Getter and setter of torrent source
+	 * @param null|string source (optional, if omitted it's a getter)
+	 * @return string|null source or null if not set
 	 */
 	public function source ( $source = null ) {
 		return is_null( $source ) ?
