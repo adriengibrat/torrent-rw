@@ -196,6 +196,17 @@ class Torrent {
 			$this->touch( $this->info['private'] = $private ? 1 : 0 );
 	}
 
+	/** Getter and setter of torrent name
+	 * @param null|string name (optional, if omitted it's a getter)
+	 * @return string|null name or null if not set
+	 */
+	public function source ( $source = null ) {
+		return is_null( $source ) ?
+			isset( $this->info['source'] ) ? $this->info['source'] : null :
+			$this->touch( $this->info['source'] = (string) $source );
+
+	}
+
 	/** Getter and setter of webseed(s) url list ( GetRight implementation )
 	 * @param null|string|array webseed or webseeds mirror list (optional, if omitted it's a getter)
 	 * @return string|array|null webseed(s) or null if not set
