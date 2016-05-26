@@ -624,6 +624,14 @@ class Torrent {
 		return join( DIRECTORY_SEPARATOR, $path );
 	}
 
+	/** Helper to explode file path
+	 * @param string file path
+	 * @return array file path
+	 */
+	static protected function path_explode ( $path ) {
+		return explode( DIRECTORY_SEPARATOR, $path );
+	}
+
 	/** Helper to test if an array is a list
 	 * @param array array to test
 	 * @return boolean is the array a list or not
@@ -666,7 +674,7 @@ class Torrent {
 			return self::set_error( new Exception( 'Failed to open file: "' . $file . '"' ) );
 		if ( self::is_url( $file ) )
 			$this->url_list( $file );
-		$path = explode( DIRECTORY_SEPARATOR, $file );
+		$path = self::path_explode( $file );
 		return array(
 			'length'	=> $size,
 			'name'		=> end( $path ),
@@ -681,21 +689,17 @@ class Torrent {
 	 * @return array torrent info
 	 */
 	private function files ( $files, $piece_length ) {
-		if ( ! self::is_url( current( $files ) ) )
-			$files = array_map( 'realpath', $files );
 		sort( $files );
 		usort( $files, create_function( '$a,$b', 'return strrpos($a,DIRECTORY_SEPARATOR)-strrpos($b,DIRECTORY_SEPARATOR);' ) );
 		$first	= current( $files );
-		$root	= dirname( $first );
-		if ( $url = self::is_url( $first ) )
-			$this->url_list( dirname( $root ) . DIRECTORY_SEPARATOR );
-		$path	= explode( DIRECTORY_SEPARATOR, dirname( $url ? $first : realpath( $first ) ) );
+		if ( ! self::is_url( $first ) )
+			$files = array_map( 'realpath', $files );
+		else
+			$this->url_list( dirname( $first ) . DIRECTORY_SEPARATOR );
+		$files_path = array_map('self::path_explode', $files );
+		$root = call_user_func_array('array_intersect_assoc' , $files_path);
 		$pieces = null; $info_files = array(); $count = count( $files ) - 1;
 		foreach ( $files as $i => $file ) {
-			if ( $path != array_intersect_assoc( $file_path = explode( DIRECTORY_SEPARATOR, $file ), $path ) ) {
-				self::set_error( new Exception( 'Files must be in the same folder: "' . $file . '" discarded' ) );
-				continue;
-			}
 			if ( ! $handle = self::fopen( $file, $filesize = self::filesize( $file ) ) ) {
 				self::set_error( new Exception( 'Failed to open file: "' . $file . '" discarded' ) );
 				continue;
@@ -703,12 +707,12 @@ class Torrent {
 			$pieces .= $this->pieces( $handle, $piece_length, $count == $i );
 			$info_files[] = array(
 				'length'	=> $filesize,
-				'path'		=> array_diff( $file_path, $path )
+				'path'		=> array_diff_assoc( $files_path[$i], $root )
 			);
 		}
 		return array(
 			'files'		=> $info_files,
-			'name'		=> end( $path ),
+			'name'		=> end( $root ),
 			'piece length'	=> $piece_length,
 			'pieces'	=> $pieces
 		);
