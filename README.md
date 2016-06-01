@@ -1,4 +1,4 @@
-Torrent
+Torrent RW
 
 PHP version 5.2+
 
@@ -49,8 +49,7 @@ $torrent->comment('hello world');
 $torrent->name('test torrent');
 $torrent->is_private(true);
 $torrent->httpseeds('http://file-hosting.domain/path/'); // Bittornado implementation
-$torrent->url_list(array('http://file-hosting.domain/path/','http://another-file-hosting.domain/path/')); // 
-GetRight implementation
+$torrent->url_list(array('http://file-hosting.domain/path/','http://another-file-hosting.domain/path/')); // GetRight implementation
 
 // print errors
 if ( $errors = $torrent->errors() )
