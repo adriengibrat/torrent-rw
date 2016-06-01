@@ -14,7 +14,7 @@ send a note to adrien.gibrat@gmail.com so I can mail you a copy.
 - Silent Exception error system
 
 2) Usage example
-<code>
+```php
 require_once 'Torrent.php';
 
 // get torrent infos
@@ -58,4 +58,4 @@ if ( $errors = $torrent->errors() )
 
 // send to user
 $torrent->send();
-</code>
+```
