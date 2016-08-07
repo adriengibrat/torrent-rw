@@ -488,7 +488,7 @@ class Torrent {
 			if ( isset( $dictionary[$key] ) )
 				return self::set_error( new Exception( 'Duplicate dictionary key' ) );
 			if ( $key < $previous )
-				return self::set_error( new Exception( 'Missorted dictionary key' ) );
+				self::set_error( new Exception( 'Missorted dictionary key' ) );
 			$dictionary[$key] = self::decode_data( $data );
 			$previous = $key;
 		}
