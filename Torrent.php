@@ -67,7 +67,7 @@ $torrent->send();
  * @tester   Jeong, Anton, dokcharlie, official testers ;) Thanks for your precious feedback
  * @copyleft 2010 - Just use it!
  * @license  http://www.gnu.org/licenses/gpl.html GNU General Public License version 3
- * @version  Release: 1.2 (6 july 2010)
+ * @version  0.0.3
  */
 
 class Torrent {
