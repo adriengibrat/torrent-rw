@@ -823,7 +823,7 @@ class Torrent {
 			 || $start === 'd13:creatio'
 			 || $start === 'd13:announc'
 			 || $start === 'd12:_info_l'
-			 || substr($start, 0, 10) === 'd7:comment' // @see https://github.com/adriengibrat/torrent-rw/issues/32
+			 || substr($start, 0, 10) === 'd7:comment' // @see https://github.com/adriengibrat/torrent-rw/issues/32
 			 || substr($start, 0, 7) === 'd4:info'
 			 || substr($start, 0, 3) === 'd9:'; // @see https://github.com/adriengibrat/torrent-rw/pull/17
 	}
