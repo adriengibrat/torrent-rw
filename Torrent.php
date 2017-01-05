@@ -376,13 +376,25 @@ class Torrent {
 		exit( $data );
 	}
 
+        /** Check if hash is sha1
+        * @param string hash
+	* @return boolean hash is sha1 or not
+	*/
+	public function is_sha1 ( $hash ) {
+		return (bool)preg_match('/^[0-9a-f]{40}$/i', $hash);
+	}	
+
 	/** Get magnet link
 	 * @param boolean html encode ampersand, default true (optional)
 	 * @return string magnet link
 	 */
-	public function magnet ( $html = true ) {
-		$ampersand = $html ? '&amp;' : '&';
-		return sprintf( 'magnet:?xt=urn:btih:%2$s%1$sdn=%3$s%1$sxl=%4$d%1$str=%5$s', $ampersand, $this->hash_info(), urlencode( $this->name() ), $this->size(), implode( $ampersand .'tr=', self::untier( $this->announce() ) ) );
+	public function magnet ( $html = true , $hash = null ) {
+                if( !empty ( $hash ) AND self::is_sha1 ( $hash ) ) {
+			$magnet = 'magnet:?xt=urn:btih:'.$hash;
+		} else {
+			$ampersand = $html ? '&amp;' : '&';
+			return sprintf( 'magnet:?xt=urn:btih:%2$s%1$sdn=%3$s%1$sxl=%4$d%1$str=%5$s', $ampersand, $this->hash_info(), urlencode( $this->name() ), $this->size(), implode( $ampersand .'tr=', self::untier( $this->announce() ) ) );
+		}
 	}	
 
 	/**** Encode BitTorrent ****/
