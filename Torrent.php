@@ -779,7 +779,7 @@ class Torrent {
 			return popen( 'cat ' . escapeshellarg( realpath( $file ) ), 'r' );
 	}
 
-	/** Helper to scan directories files and sub directories recursivly
+	/** Helper to scan directories files and sub directories recursively
 	 * @param string directory path
 	 * @return array directory content list
 	 */
