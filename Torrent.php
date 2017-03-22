@@ -166,6 +166,16 @@ class Torrent {
 		unset( $this->announce );
 	}
 
+	/** Getter and setter of torrent creation date
+	 * @param null|integer timestamp (optional, if omitted it's a getter)
+	 * @return integer|null timestamp or null if not set
+	 */
+	public function creation_date ( $timestamp = null ) {
+		return is_null( $timestamp ) ?
+			isset( $this->{'creation date'} ) ? $this->{'creation date'} : null :
+			$this->touch( $this->{'creation date'} = (int) $timestamp );
+	}
+	
 	/** Getter and setter of torrent comment
 	 * @param null|string comment (optional, if omitted it's a getter)
 	 * @return string|null comment or null if not set
