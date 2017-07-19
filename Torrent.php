@@ -110,7 +110,7 @@ class Torrent {
 		else
 			$meta = array_merge( $meta, $this->decode( $data ) );
 		foreach( $meta as $key => $value )
-			$this->{$key} = $value;
+			$this->{trim($key)} = $value;
 	}
 
 	/** Convert the current Torrent instance in torrent format
