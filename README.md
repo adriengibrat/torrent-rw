@@ -2,6 +2,18 @@ Torrent RW
 
 PHP version 5.2+
 
+**THIS PROJECT IS NOT MAINTAINED**
+
+I don't use nor have time to maintain this Class. Maintainer are welcome!
+
+It was a great pet project started as an exercice to go from [RFC](http://jonas.nitro.dk/bittorrent/bittorrent-rfc.html) to small & simple implementation, thanks for all the issues, Pull request and enthousiasm around this hackish piece of PHP code (maybe the most dirty API I ever wrote).
+
+If you need alternatives:
+- https://github.com/christeredvartsen/php-bittorrent
+- https://github.com/Devristo/torrent
+- https://github.com/johannes85/PHP-Torrent-Scraper
+and keep looking for [active PHP projects around torrents](https://github.com/search?l=PHP&o=desc&q=torrent&s=updated&type=Repositories)
+
 LICENSE: This source file is subject to version 3 of the GNU GPL
 that is available through the world-wide-web at the following URI:
 http://www.gnu.org/licenses/gpl.html.  If you did not receive a copy of
