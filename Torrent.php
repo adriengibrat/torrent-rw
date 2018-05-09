@@ -1011,20 +1011,35 @@ class Torrent
      *
      * @return array directory content list
      */
-    public static function scandir($dir)
+    public static function scandir( $dir )
     {
-        $paths = [];
-        foreach (scandir($dir) as $item) {
-            if ('.' != $item && '..' != $item) {
-                if (is_dir($path = realpath($dir . DIRECTORY_SEPARATOR . $item))) {
-                    $paths = array_merge(self::scandir($path), $paths);
-                } else {
-                    $paths[] = $path;
-                }
-            }
+        // $paths = [];
+        // foreach (scandir($dir) as $item) {
+        //     if ('.' != $item && '..' != $item) {
+        //         if (is_dir($path = realpath($dir . DIRECTORY_SEPARATOR . $item))) {
+        //             $paths = array_merge(self::scandir($path), $paths);
+        //         } else {
+        //             $paths[] = $path;
+        //         }
+        //     }
+        // }
+
+        // return $paths;
+
+        $list_of_paths = array();        
+
+        $iterator = new RecursiveDirectoryIterator( $dir, FilesystemIterator::SKIP_DOTS );
+
+        $iterator = new RecursiveIteratorIterator( $iterator );
+
+        $iterator = new ExcludeHiddenObjectsFilterIterator( $iterator );
+
+        foreach ( $iterator as $object )
+        {
+            $list_of_paths[] = $object->getPathname();
         }
 
-        return $paths;
+        return $list_of_paths;
     }
 
     /** Helper to check if string is an url (http)
@@ -1130,3 +1145,12 @@ class Torrent
         return $list;
     }
 }
+
+class ExcludeHiddenObjectsFilterIterator extends FilterIterator
+{
+    public function accept()
+    {
+        return preg_match( '/\/\./', $this->getInnerIterator()->current() ) ? false : true;
+    }
+}
+?>
