@@ -1011,24 +1011,27 @@ class Torrent
      *
      * @return array directory content list
      */
-    public static function scandir( $dir )
+    public static function scandir( $directory )
     {
-        // $paths = [];
-        // foreach (scandir($dir) as $item) {
-        //     if ('.' != $item && '..' != $item) {
-        //         if (is_dir($path = realpath($dir . DIRECTORY_SEPARATOR . $item))) {
-        //             $paths = array_merge(self::scandir($path), $paths);
-        //         } else {
-        //             $paths[] = $path;
-        //         }
+        $list_of_paths = array();
+
+        // foreach ( scandir( $directory ) as $item )
+        // {
+        //     if ( substr( $item, 0, 1 ) === '.' ): continue; endif;
+
+        //     $path = realpath( $directory . DIRECTORY_SEPARATOR . $item );
+
+        //     if ( is_dir( $path ) )
+        //     {
+        //         $list_of_paths = array_merge( self::scandir( $path ), $list_of_paths );
+        //     }
+        //     else
+        //     {
+        //         $list_of_paths[] = $path;
         //     }
         // }
 
-        // return $paths;
-
-        $list_of_paths = array();        
-
-        $iterator = new RecursiveDirectoryIterator( $dir, FilesystemIterator::SKIP_DOTS );
+        $iterator = new RecursiveDirectoryIterator( $directory, FilesystemIterator::SKIP_DOTS );
 
         $iterator = new RecursiveIteratorIterator( $iterator );
 
