@@ -1035,7 +1035,7 @@ class Torrent
      */
     public static function is_url($url)
     {
-        return preg_match('#^http(s)?://[a-z0-9-]+(.[a-z0-9-]+)*(:[0-9]+)?(/.*)?$#i', $url);
+        return (bool)filter_var($url, FILTER_VALIDATE_URL) !== false;
     }
 
     /** Helper to check if url exists
