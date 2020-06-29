@@ -1011,38 +1011,25 @@ class Torrent
      *
      * @return array directory content list
      */
-    public static function scandir( $directory )
+    public static function scandir( $directory_path, $skip_hidden_objects = false )
     {
-        $list_of_paths = array();
+        $array_of_file_paths = array();
 
-        // foreach ( scandir( $directory ) as $item )
-        // {
-        //     if ( substr( $item, 0, 1 ) === '.' ): continue; endif;
+        $directory_iterator = new RecursiveDirectoryIterator( $directory_path, FilesystemIterator::SKIP_DOTS );
 
-        //     $path = realpath( $directory . DIRECTORY_SEPARATOR . $item );
+        $directory_iterator = new RecursiveIteratorIterator( $directory_iterator );
 
-        //     if ( is_dir( $path ) )
-        //     {
-        //         $list_of_paths = array_merge( self::scandir( $path ), $list_of_paths );
-        //     }
-        //     else
-        //     {
-        //         $list_of_paths[] = $path;
-        //     }
-        // }
-
-        $iterator = new RecursiveDirectoryIterator( $directory, FilesystemIterator::SKIP_DOTS );
-
-        $iterator = new RecursiveIteratorIterator( $iterator );
-
-        $iterator = new ExcludeHiddenObjectsFilterIterator( $iterator );
-
-        foreach ( $iterator as $object )
+        foreach ( $directory_iterator as $iterator_object )
         {
-            $list_of_paths[] = $object->getPathname();
+            if ( $skip_hidden_objects && preg_match( '/[\x2F\x5C]\x2E/', $iterator_object->getPathname() ) === 1 )
+            {
+                continue;
+            }
+
+            $array_of_file_paths[] = $iterator_object->getPathname();
         }
 
-        return $list_of_paths;
+        return $array_of_file_paths;
     }
 
     /** Helper to check if string is an url (http)
