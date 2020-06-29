@@ -580,7 +580,7 @@ class Torrent
      *
      * @return array directory content list
      */
-    public static function scandir($dir, bool $include_hidden = true)
+    public static function scandir($dir, $include_hidden = true)
     {
         $paths    = [];
         $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($dir,
