@@ -1135,12 +1135,4 @@ class Torrent
         return $list;
     }
 }
-
-class ExcludeHiddenObjectsFilterIterator extends FilterIterator
-{
-    public function accept()
-    {
-        return preg_match( '/\/\./', $this->getInnerIterator()->current() ) ? false : true;
-    }
-}
 ?>
