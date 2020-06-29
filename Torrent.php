@@ -586,9 +586,9 @@ class Torrent
         $paths = [];
         $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($dir,
             RecursiveDirectoryIterator::SKIP_DOTS),
-            RecursiveIteratorIterator::SELF_FIRST);
+            RecursiveIteratorIterator::LEAVES_ONLY);
         foreach ($iterator as $name => $object) {
-            if (is_dir($name) || (!$include_hidden && basename($name)[0] === '.')) {
+            if (!$include_hidden && basename($name)[0] === '.') {
                 continue;
             }
             $paths[] = $name;
