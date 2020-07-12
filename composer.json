@@ -1,34 +1,41 @@
 {
-    "name": "adriengibrat/torrent-rw",
-    "description": "torrent reader/writer",
-    "type": "project",
-    "license": "GPL-3.0-only",
-    "authors": [
-        {
-            "name": "Adrien Gibrat",
-            "email": "adrien.gibrat@gmail.com"
-        }
-    ],
-    "require": {
-        "php": "^7.2",
-        "ext-curl": "*",
-        "darkalchemy/scrapeer": "^0.6.3"
-    },
-    "require-dev": {
-        "friendsofphp/php-cs-fixer": "^2.16",
-        "symfony/var-dumper": "^5.1"
-    },
-    "autoload": {
-        "psr-4": {
-            "App\\": "src"
-        }
-    },
-    "config": {
-        "sort-packages": true
-    },
-    "scripts": {
-        "cleanup": "vendor/friendsofphp/php-cs-fixer/php-cs-fixer fix --show-progress=dots -vvv",
-        "post-install-cmd": "composer dump-autoload -o",
-        "post-update-cmd": "composer dump-autoload -o"
+  "name": "adriengibrat/torrent-rw",
+  "description": "torrent reader/writer",
+  "type": "project",
+  "license": "GPL-3.0-only",
+  "authors": [
+    {
+      "name": "Adrien Gibrat",
+      "email": "adrien.gibrat@gmail.com"
     }
+  ],
+  "require": {
+    "php": "^7.2",
+    "ext-curl": "*",
+    "darkalchemy/scrapeer": "^0.6.3"
+  },
+  "require-dev": {
+    "friendsofphp/php-cs-fixer": "^2.16",
+    "overtrue/phplint": "^2.0",
+    "phpstan/phpstan": "^0.12.32",
+    "roave/security-advisories": "dev-master",
+    "squizlabs/php_codesniffer": "3.*",
+    "symfony/var-dumper": "^5.1"
+  },
+  "autoload": {
+    "psr-4": {
+      "App\\": "src"
+    }
+  },
+  "config": {
+    "sort-packages": true
+  },
+  "scripts": {
+    "cleanup": "vendor/friendsofphp/php-cs-fixer/php-cs-fixer fix --show-progress=dots -vvv",
+    "post-install-cmd": "composer dump-autoload -o",
+    "post-update-cmd": "composer dump-autoload -o",
+    "phplint": "phplint ./ --exclude=vendor --no-cache --jobs=10 --ansi",
+    "phpcs": "phpcs -s",
+    "phpstan": "phpstan analyse src/ -l4"
+  }
 }
