@@ -1011,20 +1011,25 @@ class Torrent
      *
      * @return array directory content list
      */
-    public static function scandir($dir)
+    public static function scandir( $directory_path, $skip_hidden_objects = false )
     {
-        $paths = [];
-        foreach (scandir($dir) as $item) {
-            if ('.' != $item && '..' != $item) {
-                if (is_dir($path = realpath($dir . DIRECTORY_SEPARATOR . $item))) {
-                    $paths = array_merge(self::scandir($path), $paths);
-                } else {
-                    $paths[] = $path;
-                }
+        $array_of_file_paths = array();
+
+        $directory_iterator = new RecursiveDirectoryIterator( $directory_path, FilesystemIterator::SKIP_DOTS );
+
+        $directory_iterator = new RecursiveIteratorIterator( $directory_iterator );
+
+        foreach ( $directory_iterator as $iterator_object )
+        {
+            if ( $skip_hidden_objects && preg_match( '/[\x2F\x5C]\x2E/', $iterator_object->getPathname() ) === 1 )
+            {
+                continue;
             }
+
+            $array_of_file_paths[] = $iterator_object->getPathname();
         }
 
-        return $paths;
+        return $array_of_file_paths;
     }
 
     /** Helper to check if string is an url (http)
@@ -1130,3 +1135,4 @@ class Torrent
         return $list;
     }
 }
+?>
